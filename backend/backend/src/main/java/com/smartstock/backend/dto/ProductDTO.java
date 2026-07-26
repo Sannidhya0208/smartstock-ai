@@ -12,13 +12,17 @@ public class ProductDTO {
     @NotBlank(message = "SKU is required")
     private String sku;
 
-    @NotNull
-    @Min(value = 1, message = "Price must be greater than zero")
+    @NotNull(message = "Price is required")
+    @Min(value = 1, message = "Price must be greater than 0")
     private Double price;
 
-    @NotNull
+    @NotNull(message = "Quantity is required")
     @Min(value = 0, message = "Quantity cannot be negative")
     private Integer quantity;
+
+    private Long categoryId;
+
+    private Long supplierId;
 
     public ProductDTO() {}
 
@@ -52,5 +56,21 @@ public class ProductDTO {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public Long getSupplierId() {
+        return supplierId;
+    }
+
+    public void setSupplierId(Long supplierId) {
+        this.supplierId = supplierId;
     }
 }
