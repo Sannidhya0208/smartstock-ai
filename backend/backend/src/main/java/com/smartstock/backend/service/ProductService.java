@@ -1,5 +1,6 @@
 package com.smartstock.backend.service;
 
+import com.smartstock.backend.exception.ResourceNotFoundException;
 import com.smartstock.backend.model.Product;
 import com.smartstock.backend.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,9 @@ public class ProductService {
     }
 
     public Product getProductById(Long id) {
-        return productRepository.findById(id).orElse(null);
+        return productRepository.findById(id)
+        .orElseThrow(() ->
+                new ResourceNotFoundException("Product not found"));
     }
 
     public void deleteProduct(Long id) {
