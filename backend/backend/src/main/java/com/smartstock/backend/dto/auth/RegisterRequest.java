@@ -1,4 +1,4 @@
-package com.smartstock.backend.dto;
+package com.smartstock.backend.dto.auth;
 
 public class RegisterRequest {
 
