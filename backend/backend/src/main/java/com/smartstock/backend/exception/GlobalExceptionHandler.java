@@ -1,129 +1,63 @@
 package com.smartstock.backend.exception;
 
-import com.smartstock.backend.dto.ApiResponse;
-
+import com.smartstock.backend.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.time.LocalDateTime;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse> handleNotFound(
-            ResourceNotFoundException ex,
-            HttpServletRequest request
-    ) {
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(
+            ResourceNotFoundException exception,
+            HttpServletRequest request) {
 
-        ApiResponse response = new ApiResponse(
+        ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
-                404,
-                ex.getMessage(),
-                request.getRequestURI()
-        );
+                HttpStatus.NOT_FOUND.value(),
+                exception.getMessage(),
+                request.getRequestURI());
 
         return new ResponseEntity<>(
-                response,
-                HttpStatus.NOT_FOUND
-        );
+                errorResponse,
+                HttpStatus.NOT_FOUND);
     }
-
-
-
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ApiResponse> handleDuplicate(
-            DuplicateResourceException ex,
-            HttpServletRequest request
-    ) {
-
-        ApiResponse response = new ApiResponse(
-                LocalDateTime.now(),
-                409,
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return new ResponseEntity<>(
-                response,
-                HttpStatus.CONFLICT
-        );
-    }
-
-
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponse> handleBadRequest(
-            BadRequestException ex,
-            HttpServletRequest request
-    ) {
+    public ResponseEntity<ErrorResponse> handleBadRequest(
+            BadRequestException exception,
+            HttpServletRequest request) {
 
-        ApiResponse response = new ApiResponse(
+        ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
-                400,
-                ex.getMessage(),
-                request.getRequestURI()
-        );
+                HttpStatus.BAD_REQUEST.value(),
+                exception.getMessage(),
+                request.getRequestURI());
 
         return new ResponseEntity<>(
-                response,
-                HttpStatus.BAD_REQUEST
-        );
+                errorResponse,
+                HttpStatus.BAD_REQUEST);
     }
-
-
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse> handleGlobalException(
-            Exception ex,
-            HttpServletRequest request
-    ) {
+    public ResponseEntity<ErrorResponse> handleGeneralException(
+            Exception exception,
+            HttpServletRequest request) {
 
-        ApiResponse response = new ApiResponse(
+        ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
-                500,
-                "Internal Server Error",
-                request.getRequestURI()
-        );
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "An unexpected error occurred",
+                request.getRequestURI());
 
         return new ResponseEntity<>(
-                response,
-                HttpStatus.INTERNAL_SERVER_ERROR
-        );
+                errorResponse,
+                HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse> handleValidation(
-        MethodArgumentNotValidException ex,
-        HttpServletRequest request
-) {
-
-    String message = ex.getBindingResult()
-            .getFieldErrors()
-            .get(0)
-            .getDefaultMessage();
-
-
-    ApiResponse response = new ApiResponse(
-            LocalDateTime.now(),
-            400,
-            message,
-            request.getRequestURI()
-    );
-
-
-    return new ResponseEntity<>(
-            response,
-            HttpStatus.BAD_REQUEST
-    );
-}
-
 }
