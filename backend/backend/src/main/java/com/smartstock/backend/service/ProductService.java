@@ -10,6 +10,12 @@ import com.smartstock.backend.repository.CategoryRepository;
 import com.smartstock.backend.repository.ProductRepository;
 import com.smartstock.backend.repository.SupplierRepository;
 
+import com.smartstock.backend.dto.ProductPageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -232,5 +238,55 @@ public class ProductService {
         return response;
 
     }
+
+    public ProductPageResponse getProducts(
+                int page,
+                int size,
+                String sortBy,
+                String sortDirection,
+                String search,
+                Long categoryId,
+                Long supplierId) {
+
+        Sort sort = sortDirection.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Product> productPage;
+
+        if (search != null && !search.isBlank()) {
+                productPage =
+                        productRepository
+                                .findByNameContainingIgnoreCaseOrSkuContainingIgnoreCase(
+                                        search,
+                                        search,
+                                        pageable
+                              );
+        } else if (categoryId != null) {
+                productPage =
+                        productRepository.findByCategoryId(categoryId, pageable);
+        } else if (supplierId != null) {
+                productPage =
+                        productRepository.findBySupplierId(supplierId, pageable);
+        } else {
+                productPage = productRepository.findAll(pageable);
+        }
+
+        List<ProductResponse> products = productPage
+            .getContent()
+            .stream()
+            .map(this::mapToResponse)
+            .toList();
+
+        return new ProductPageResponse(
+            products,
+            productPage.getNumber(),
+            productPage.getSize(),
+            productPage.getTotalElements(),
+            productPage.getTotalPages(),
+            productPage.isLast());
+        }
 
 }

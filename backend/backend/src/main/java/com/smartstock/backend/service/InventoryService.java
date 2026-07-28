@@ -8,6 +8,10 @@ import com.smartstock.backend.model.Product;
 import com.smartstock.backend.repository.InventoryRepository;
 import com.smartstock.backend.repository.ProductRepository;
 
+import com.smartstock.backend.model.StockTransaction;
+import com.smartstock.backend.model.TransactionType;
+import com.smartstock.backend.repository.StockTransactionRepository;
+
 import com.smartstock.backend.exception.BadRequestException;
 
 import com.smartstock.backend.dto.StockRequest;
@@ -18,6 +22,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
+
 @Service
 public class InventoryService {
 
@@ -25,11 +31,14 @@ public class InventoryService {
     private final ProductRepository productRepository;
 
     public InventoryService(
-            InventoryRepository inventoryRepository,
-            ProductRepository productRepository) {
+         InventoryRepository inventoryRepository,
+        ProductRepository productRepository,
+        StockTransactionRepository stockTransactionRepository) {
 
-        this.inventoryRepository = inventoryRepository;
-        this.productRepository = productRepository;
+    this.inventoryRepository = inventoryRepository;
+    this.productRepository = productRepository;
+    this.stockTransactionRepository = stockTransactionRepository;
+
     }
 
     public InventoryResponse createInventory(InventoryRequest request) {
@@ -90,46 +99,64 @@ public class InventoryService {
 
     public StockResponse stockIn(Long inventoryId, StockRequest request) {
 
-        validateStockQuantity(request.getQuantity());
+    validateStockQuantity(request.getQuantity());
 
-        Inventory inventory = inventoryRepository.findById(inventoryId)
+    Inventory inventory = inventoryRepository.findById(inventoryId)
             .orElseThrow(() ->
                     new ResourceNotFoundException("Inventory not found"));
 
-        int updatedStock = inventory.getStockLevel() + request.getQuantity();
+    int stockBefore = inventory.getStockLevel();
+    int stockAfter = stockBefore + request.getQuantity();
 
-        inventory.setStockLevel(updatedStock);
+    inventory.setStockLevel(stockAfter);
 
-        Inventory savedInventory = inventoryRepository.save(inventory);
+    Inventory savedInventory = inventoryRepository.save(inventory);
 
-        return mapToStockResponse(
+    saveTransaction(
+            savedInventory,
+            TransactionType.STOCK_IN,
+            request.getQuantity(),
+            stockBefore,
+            stockAfter
+    );
+
+    return mapToStockResponse(
             savedInventory,
             request.getQuantity() + " units added successfully");
-    }
+}
     public StockResponse stockOut(Long inventoryId, StockRequest request) {
 
-        validateStockQuantity(request.getQuantity());
+    validateStockQuantity(request.getQuantity());
 
-        Inventory inventory = inventoryRepository.findById(inventoryId)
+    Inventory inventory = inventoryRepository.findById(inventoryId)
             .orElseThrow(() ->
                     new ResourceNotFoundException("Inventory not found"));
 
-        if (inventory.getStockLevel() < request.getQuantity()) {
-            throw new BadRequestException(
-                "Insufficient stock. Available stock: "
-                    + inventory.getStockLevel());
+    int stockBefore = inventory.getStockLevel();
+
+    if (request.getQuantity() > stockBefore) {
+        throw new BadRequestException(
+                "Insufficient stock. Available stock: " + stockBefore);
     }
 
-        int updatedStock = inventory.getStockLevel() - request.getQuantity();
+    int stockAfter = stockBefore - request.getQuantity();
 
-        inventory.setStockLevel(updatedStock);
+    inventory.setStockLevel(stockAfter);
 
-        Inventory savedInventory = inventoryRepository.save(inventory);
+    Inventory savedInventory = inventoryRepository.save(inventory);
 
-        return mapToStockResponse(
+    saveTransaction(
+            savedInventory,
+            TransactionType.STOCK_OUT,
+            request.getQuantity(),
+            stockBefore,
+            stockAfter
+    );
+
+    return mapToStockResponse(
             savedInventory,
             request.getQuantity() + " units removed successfully");
-    }
+}
     private void validateStockQuantity(Integer quantity) {
 
     if (quantity == null || quantity <= 0) {
@@ -150,4 +177,23 @@ public class InventoryService {
 
         return response;
     }
+    private final StockTransactionRepository stockTransactionRepository;
+
+    private void saveTransaction(
+        Inventory inventory,
+        TransactionType transactionType,
+        int quantity,
+        int stockBefore,
+        int stockAfter) {
+
+    StockTransaction transaction = new StockTransaction();
+
+    transaction.setProduct(inventory.getProduct());
+    transaction.setTransactionType(transactionType);
+    transaction.setQuantity(quantity);
+    transaction.setStockBefore(stockBefore);
+    transaction.setStockAfter(stockAfter);
+
+    stockTransactionRepository.save(transaction);
+}
 }

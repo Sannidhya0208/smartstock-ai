@@ -7,6 +7,7 @@ import com.smartstock.backend.service.ProductService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.smartstock.backend.dto.ProductPageResponse;
 
 import org.springframework.web.bind.annotation.*;
 
@@ -105,6 +106,29 @@ public class ProductController {
         );
 
     }
+
+
+    @GetMapping("/page")
+        public ResponseEntity<ProductPageResponse> getProducts(
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "10") int size,
+                @RequestParam(defaultValue = "id") String sortBy,
+                @RequestParam(defaultValue = "asc") String sortDirection,
+                @RequestParam(required = false) String search,
+                @RequestParam(required = false) Long categoryId,
+                @RequestParam(required = false) Long supplierId) {
+
+        return ResponseEntity.ok(
+                    productService.getProducts(
+                        page,
+                        size,
+                        sortBy,
+                        sortDirection,
+                        search,
+                        categoryId,
+                        supplierId
+                ));
+        }
 
 
 }
