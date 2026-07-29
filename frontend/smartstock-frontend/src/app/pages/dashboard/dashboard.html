@@ -1,0 +1,229 @@
+<div class="dashboard-page">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">
+        <i class="bi bi-box-seam"></i>
+      </div>
+
+      <div>
+        <h2>SmartStock</h2>
+        <span>AI Inventory</span>
+      </div>
+    </div>
+
+    <nav class="navigation">
+      <a class="nav-link active">
+        <i class="bi bi-grid"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <a class="nav-link">
+        <i class="bi bi-box"></i>
+        <span>Products</span>
+      </a>
+
+      <a class="nav-link">
+        <i class="bi bi-clipboard-data"></i>
+        <span>Inventory</span>
+      </a>
+
+      <a class="nav-link">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span>Analytics</span>
+      </a>
+
+      <a class="nav-link">
+        <i class="bi bi-stars"></i>
+        <span>AI Assistant</span>
+      </a>
+    </nav>
+
+    <button
+      type="button"
+      class="logout-button"
+      (click)="logout()">
+      <i class="bi bi-box-arrow-left"></i>
+      <span>Log out</span>
+    </button>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div>
+        <p class="page-label">Overview</p>
+        <h1>Inventory Dashboard</h1>
+      </div>
+
+      <button
+        type="button"
+        class="refresh-button"
+        [disabled]="isLoading"
+        (click)="loadDashboard()">
+        <i class="bi bi-arrow-clockwise"></i>
+        Refresh
+      </button>
+    </header>
+
+    <div
+      *ngIf="isLoading"
+      class="loading-state">
+      <div class="spinner-border text-primary"></div>
+      <p>Generating your AI inventory summary...</p>
+    </div>
+
+    <div
+      *ngIf="errorMessage && !isLoading"
+      class="error-state">
+      <i class="bi bi-exclamation-triangle"></i>
+
+      <div>
+        <h3>Dashboard unavailable</h3>
+        <p>{{ errorMessage }}</p>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="loadDashboard()">
+          Try again
+        </button>
+      </div>
+    </div>
+
+    <ng-container
+      *ngIf="dashboard && !isLoading">
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <div class="stat-icon products-icon">
+            <i class="bi bi-box-seam"></i>
+          </div>
+
+          <div>
+            <p>Total products</p>
+            <h2>{{ dashboard.totalProducts }}</h2>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon inventory-icon">
+            <i class="bi bi-clipboard-data"></i>
+          </div>
+
+          <div>
+            <p>Inventory records</p>
+            <h2>{{ dashboard.totalInventoryItems }}</h2>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon low-stock-icon">
+            <i class="bi bi-exclamation-circle"></i>
+          </div>
+
+          <div>
+            <p>Low-stock items</p>
+            <h2>{{ dashboard.lowStockItems }}</h2>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon out-stock-icon">
+            <i class="bi bi-x-circle"></i>
+          </div>
+
+          <div>
+            <p>Out of stock</p>
+            <h2>{{ dashboard.outOfStockItems }}</h2>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="value-card">
+          <div class="card-heading">
+            <div>
+              <p>Current valuation</p>
+              <h2>Total Inventory Value</h2>
+            </div>
+
+            <div class="value-icon">
+              <i class="bi bi-currency-rupee"></i>
+            </div>
+          </div>
+
+          <div class="inventory-value">
+            {{
+              dashboard.totalInventoryValue
+                | currency:'INR':'symbol':'1.2-2':'en-IN'
+            }}
+          </div>
+
+          <p class="value-caption">
+            Estimated using the current product price and
+            available stock level.
+          </p>
+        </article>
+
+        <article class="health-card">
+          <div class="card-heading">
+            <div>
+              <p>Inventory health</p>
+              <h2>Stock Status</h2>
+            </div>
+
+            <i class="bi bi-activity"></i>
+          </div>
+
+          <div class="health-row">
+            <span>Healthy inventory</span>
+
+            <strong>
+              {{
+                dashboard.totalInventoryItems -
+                dashboard.lowStockItems -
+                dashboard.outOfStockItems
+              }}
+            </strong>
+          </div>
+
+          <div class="health-row">
+            <span>Needs attention</span>
+            <strong>{{ dashboard.lowStockItems }}</strong>
+          </div>
+
+          <div class="health-row">
+            <span>Critical</span>
+            <strong>{{ dashboard.outOfStockItems }}</strong>
+          </div>
+        </article>
+      </section>
+
+      <section class="ai-card">
+        <div class="ai-heading">
+          <div class="ai-icon">
+            <i class="bi bi-stars"></i>
+          </div>
+
+          <div>
+            <p>Powered by {{ dashboard.model }}</p>
+            <h2>AI Inventory Summary</h2>
+          </div>
+        </div>
+
+        <div class="ai-summary">
+          {{ dashboard.aiSummary }}
+        </div>
+
+        <div class="generated-time">
+          <i class="bi bi-clock"></i>
+
+          Generated
+          {{
+            dashboard.generatedAt
+              | date:'medium'
+          }}
+        </div>
+      </section>
+    </ng-container>
+  </main>
+</div>

@@ -1,0 +1,170 @@
+<div class="login-page">
+  <section class="brand-panel">
+    <div class="brand-content">
+      <div class="brand-icon">
+        <i class="bi bi-box-seam"></i>
+      </div>
+
+      <p class="eyebrow">AI-powered inventory management</p>
+
+      <h1>SmartStock AI</h1>
+
+      <p class="brand-description">
+        Monitor inventory, identify stock risks and receive
+        intelligent business recommendations from one dashboard.
+      </p>
+
+      <div class="feature-list">
+        <div class="feature">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Demand forecasting and analytics</span>
+        </div>
+
+        <div class="feature">
+          <i class="bi bi-bell"></i>
+          <span>Real-time low-stock alerts</span>
+        </div>
+
+        <div class="feature">
+          <i class="bi bi-stars"></i>
+          <span>AI-generated inventory insights</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="form-panel">
+    <div class="login-card">
+      <div class="mobile-brand">
+        <i class="bi bi-box-seam"></i>
+        <span>SmartStock AI</span>
+      </div>
+
+      <div class="heading">
+        <p class="welcome-text">Welcome back</p>
+        <h2>Sign in to your account</h2>
+        <p>Enter your credentials to access the dashboard.</p>
+      </div>
+
+      <div
+        *ngIf="errorMessage"
+        class="alert alert-danger"
+        role="alert">
+        <i class="bi bi-exclamation-circle"></i>
+        {{ errorMessage }}
+      </div>
+
+      <form
+        [formGroup]="loginForm"
+        (ngSubmit)="submit()"
+        novalidate>
+
+        <div class="form-group">
+          <label for="email">Email address</label>
+
+          <div class="input-wrapper">
+            <i class="bi bi-envelope input-icon"></i>
+
+            <input
+              id="email"
+              type="email"
+              class="form-control"
+              formControlName="email"
+              autocomplete="email"
+              placeholder="admin@testing.com">
+          </div>
+
+          <small
+            class="validation-message"
+            *ngIf="
+              loginForm.controls.email.touched &&
+              loginForm.controls.email.hasError('required')
+            ">
+            Email is required.
+          </small>
+
+          <small
+            class="validation-message"
+            *ngIf="
+              loginForm.controls.email.touched &&
+              loginForm.controls.email.hasError('email')
+            ">
+            Enter a valid email address.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+
+          <div class="input-wrapper">
+            <i class="bi bi-lock input-icon"></i>
+
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-control password-input"
+              formControlName="password"
+              autocomplete="current-password"
+              placeholder="Enter your password">
+
+            <button
+              type="button"
+              class="password-toggle"
+              aria-label="Show or hide password"
+              (click)="togglePassword()">
+              <i
+                class="bi"
+                [class.bi-eye]="!showPassword"
+                [class.bi-eye-slash]="showPassword">
+              </i>
+            </button>
+          </div>
+
+          <small
+            class="validation-message"
+            *ngIf="
+              loginForm.controls.password.touched &&
+              loginForm.controls.password.hasError('required')
+            ">
+            Password is required.
+          </small>
+
+          <small
+            class="validation-message"
+            *ngIf="
+              loginForm.controls.password.touched &&
+              loginForm.controls.password.hasError('minlength')
+            ">
+            Password must contain at least 6 characters.
+          </small>
+        </div>
+
+        <button
+          type="submit"
+          class="login-button"
+          [disabled]="isLoading">
+
+          <span
+            *ngIf="isLoading"
+            class="spinner-border spinner-border-sm"
+            aria-hidden="true">
+          </span>
+
+          <span>
+            {{ isLoading ? 'Signing in...' : 'Sign in' }}
+          </span>
+
+          <i
+            *ngIf="!isLoading"
+            class="bi bi-arrow-right">
+          </i>
+        </button>
+      </form>
+
+      <p class="security-note">
+        <i class="bi bi-shield-check"></i>
+        Secured using JWT authentication
+      </p>
+    </div>
+  </section>
+</div>
