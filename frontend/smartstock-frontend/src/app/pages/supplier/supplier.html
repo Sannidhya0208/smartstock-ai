@@ -1,0 +1,298 @@
+<div class="suppliers-page">
+
+  <header class="page-header">
+    <div>
+      <p class="page-label">Management</p>
+      <h1>Suppliers</h1>
+      <p class="page-description">
+        Manage supplier contact information and product sources.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="primary-button"
+      (click)="openCreateModal()"
+    >
+      <i class="bi bi-plus-lg"></i>
+      Add Supplier
+    </button>
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="alert success-alert"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage && !showModal"
+    class="alert error-alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="toolbar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="applySearch()"
+        placeholder="Search by name, email or phone"
+      >
+    </div>
+
+    <div class="supplier-count">
+      {{ filteredSuppliers.length }}
+      supplier{{
+        filteredSuppliers.length === 1
+          ? ''
+          : 's'
+      }}
+    </div>
+  </section>
+
+  <section class="table-card">
+
+    <div
+      *ngIf="isLoading"
+      class="loading-state"
+    >
+      <div class="spinner-border"></div>
+      <p>Loading suppliers...</p>
+    </div>
+
+    <div
+      *ngIf="!isLoading"
+      class="table-wrapper"
+    >
+      <table class="suppliers-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Supplier</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th class="actions-column">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            *ngFor="
+              let supplier of filteredSuppliers
+            "
+          >
+            <td>{{ supplier.id }}</td>
+
+            <td>
+              <div class="supplier-name-cell">
+                <div class="supplier-avatar">
+                  {{
+                    supplier.name
+                      .charAt(0)
+                      .toUpperCase()
+                  }}
+                </div>
+
+                <strong>
+                  {{ supplier.name }}
+                </strong>
+              </div>
+            </td>
+
+            <td>
+              <a
+                class="contact-link"
+                [href]="'mailto:' + supplier.email"
+              >
+                {{ supplier.email }}
+              </a>
+            </td>
+
+            <td>
+              <a
+                class="contact-link"
+                [href]="'tel:' + supplier.phone"
+              >
+                {{ supplier.phone }}
+              </a>
+            </td>
+
+            <td class="actions">
+              <button
+                type="button"
+                class="icon-button edit-button"
+                title="Edit supplier"
+                (click)="openEditModal(supplier)"
+              >
+                <i class="bi bi-pencil"></i>
+              </button>
+
+              <button
+                type="button"
+                class="icon-button delete-button"
+                title="Delete supplier"
+                (click)="deleteSupplier(supplier)"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+
+          <tr
+            *ngIf="
+              filteredSuppliers.length === 0
+            "
+          >
+            <td
+              colspan="5"
+              class="empty-state"
+            >
+              No suppliers found.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div
+    *ngIf="showModal"
+    class="modal-backdrop"
+    (click)="closeModal()"
+  >
+    <div
+      class="modal-card"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header">
+        <div>
+          <p class="page-label">
+            {{
+              selectedSupplierId === null
+                ? 'Create'
+                : 'Update'
+            }}
+          </p>
+
+          <h2>
+            {{
+              selectedSupplierId === null
+                ? 'Add Supplier'
+                : 'Edit Supplier'
+            }}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="close-button"
+          (click)="closeModal()"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div
+        *ngIf="errorMessage"
+        class="alert error-alert"
+      >
+        {{ errorMessage }}
+      </div>
+
+      <form
+        #supplierForm="ngForm"
+        (ngSubmit)="saveSupplier()"
+      >
+        <div class="form-group">
+          <label for="supplierName">
+            Supplier name
+          </label>
+
+          <input
+            id="supplierName"
+            name="supplierName"
+            type="text"
+            [(ngModel)]="supplierName"
+            required
+            maxlength="120"
+            placeholder="Example: Dell Distributors"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="supplierEmail">
+            Email address
+          </label>
+
+          <input
+            id="supplierEmail"
+            name="supplierEmail"
+            type="email"
+            [(ngModel)]="supplierEmail"
+            required
+            email
+            maxlength="150"
+            placeholder="supplier@example.com"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="supplierPhone">
+            Phone number
+          </label>
+
+          <input
+            id="supplierPhone"
+            name="supplierPhone"
+            type="tel"
+            [(ngModel)]="supplierPhone"
+            required
+            maxlength="20"
+            placeholder="+91 98765 43210"
+          >
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="isSaving"
+            (click)="closeModal()"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="
+              supplierForm.invalid ||
+              isSaving
+            "
+          >
+            <span
+              *ngIf="isSaving"
+              class="
+                spinner-border
+                spinner-border-sm
+              "
+            ></span>
+
+            {{
+              isSaving
+                ? 'Saving...'
+                : 'Save Supplier'
+            }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

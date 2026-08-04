@@ -1,51 +1,4 @@
 <div class="dashboard-page">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-icon">
-        <i class="bi bi-box-seam"></i>
-      </div>
-
-      <div>
-        <h2>SmartStock</h2>
-        <span>AI Inventory</span>
-      </div>
-    </div>
-
-    <nav class="navigation">
-      <a class="nav-link active">
-        <i class="bi bi-grid"></i>
-        <span>Dashboard</span>
-      </a>
-
-      <a class="nav-link">
-        <i class="bi bi-box"></i>
-        <span>Products</span>
-      </a>
-
-      <a class="nav-link">
-        <i class="bi bi-clipboard-data"></i>
-        <span>Inventory</span>
-      </a>
-
-      <a class="nav-link">
-        <i class="bi bi-graph-up-arrow"></i>
-        <span>Analytics</span>
-      </a>
-
-      <a class="nav-link">
-        <i class="bi bi-stars"></i>
-        <span>AI Assistant</span>
-      </a>
-    </nav>
-
-    <button
-      type="button"
-      class="logout-button"
-      (click)="logout()">
-      <i class="bi bi-box-arrow-left"></i>
-      <span>Log out</span>
-    </button>
-  </aside>
 
   <main class="main-content">
     <header class="topbar">
@@ -54,43 +7,31 @@
         <h1>Inventory Dashboard</h1>
       </div>
 
-      <button
-        type="button"
-        class="refresh-button"
-        [disabled]="isLoading"
-        (click)="loadDashboard()">
+      <button type="button" class="refresh-button" [disabled]="isLoading" (click)="loadDashboard()">
         <i class="bi bi-arrow-clockwise"></i>
         Refresh
       </button>
     </header>
 
-    <div
-      *ngIf="isLoading"
-      class="loading-state">
+    <div *ngIf="isLoading" class="loading-state">
       <div class="spinner-border text-primary"></div>
       <p>Generating your AI inventory summary...</p>
     </div>
 
-    <div
-      *ngIf="errorMessage && !isLoading"
-      class="error-state">
+    <div *ngIf="errorMessage && !isLoading" class="error-state">
       <i class="bi bi-exclamation-triangle"></i>
 
       <div>
         <h3>Dashboard unavailable</h3>
         <p>{{ errorMessage }}</p>
 
-        <button
-          type="button"
-          class="btn btn-primary"
-          (click)="loadDashboard()">
+        <button type="button" class="btn btn-primary" (click)="loadDashboard()">
           Try again
         </button>
       </div>
     </div>
 
-    <ng-container
-      *ngIf="dashboard && !isLoading">
+    <ng-container *ngIf="dashboard && !isLoading">
 
       <section class="stats-grid">
         <article class="stat-card">
@@ -153,8 +94,8 @@
 
           <div class="inventory-value">
             {{
-              dashboard.totalInventoryValue
-                | currency:'INR':'symbol':'1.2-2':'en-IN'
+            dashboard.totalInventoryValue
+            | currency:'INR':'symbol':'1.2-2':'en-IN'
             }}
           </div>
 
@@ -179,9 +120,9 @@
 
             <strong>
               {{
-                dashboard.totalInventoryItems -
-                dashboard.lowStockItems -
-                dashboard.outOfStockItems
+              dashboard.totalInventoryItems -
+              dashboard.lowStockItems -
+              dashboard.outOfStockItems
               }}
             </strong>
           </div>
@@ -219,8 +160,8 @@
 
           Generated
           {{
-            dashboard.generatedAt
-              | date:'medium'
+          dashboard.generatedAt
+          | date:'medium'
           }}
         </div>
       </section>

@@ -1,1 +1,58 @@
-<p>sidebar works!</p>
+<aside class="sidebar">
+    <div class="brand">
+        <div class="brand-icon">
+            <i class="bi bi-box-seam"></i>
+        </div>
+
+        <div>
+            <h2>SmartStock</h2>
+            <span>AI Inventory</span>
+        </div>
+    </div>
+
+    <nav class="navigation">
+        <a class="nav-link" routerLink="/dashboard" routerLinkActive="active">
+            <i class="bi bi-grid"></i>
+            <span>Dashboard</span>
+        </a>
+
+        <a class="nav-link" routerLink="/products" routerLinkActive="active">
+            <i class="bi bi-box"></i>
+            <span>Products</span>
+        </a>
+
+        <a class="nav-link" routerLink="/categories" routerLinkActive="active">
+            <i class="bi bi-tags"></i>
+            <span>Categories</span>
+        </a>
+
+        <a class="nav-link" routerLink="suppliers" routerLinkActive="active">
+            <i class="bi bi-truck"></i>
+            <span>Suppliers</span>
+        </a>
+
+        <a class="nav-link" routerLink="inventory" routerLinkActive="active">
+            <i class="bi bi-clipboard-data"></i>
+            <span>Inventory</span>
+        </a>
+        <a class="nav-link" routerLink="/transactions" routerLinkActive="active">
+            <i class="bi bi-clock-history"></i>
+            <span>Transactions</span>
+        </a>
+
+        <a class="nav-link" routerLink="/analytics" routerLinkActive="active">
+            <i class="bi bi-bar-chart"></i>
+            <span>Analytics</span>
+        </a>
+
+        <a class="nav-link" routerLink="/ai-assistant" routerLinkActive="active">
+            <i class="bi bi-stars"></i>
+            <span>AI Assistant</span>
+        </a>
+    </nav>
+
+    <button type="button" class="logout-button" (click)="logout()">
+        <i class="bi bi-box-arrow-left"></i>
+        <span>Log out</span>
+    </button>
+</aside>

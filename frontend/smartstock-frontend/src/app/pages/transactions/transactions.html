@@ -1,0 +1,238 @@
+<div class="transactions-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">AUDIT TRAIL</p>
+      <h1>Stock Transactions</h1>
+      <p class="subtitle">
+        Review every stock-in and stock-out operation.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="refresh-button"
+      [disabled]="isLoading"
+      (click)="loadTransactions()"
+    >
+      <i class="bi bi-arrow-clockwise"></i>
+      Refresh
+    </button>
+  </header>
+
+  <div
+    *ngIf="errorMessage"
+    class="alert error-alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <div class="stat-icon total-icon">
+        <i class="bi bi-clock-history"></i>
+      </div>
+
+      <div>
+        <p>Total transactions</p>
+        <h2>{{ transactions.length }}</h2>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-icon in-icon">
+        <i class="bi bi-arrow-down-circle"></i>
+      </div>
+
+      <div>
+        <p>Stock-in operations</p>
+        <h2>{{ stockInCount }}</h2>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-icon out-icon">
+        <i class="bi bi-arrow-up-circle"></i>
+      </div>
+
+      <div>
+        <p>Stock-out operations</p>
+        <h2>{{ stockOutCount }}</h2>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div>
+        <p>Units moved</p>
+        <h2>
+          +{{ totalUnitsIn }} / -{{ totalUnitsOut }}
+        </h2>
+      </div>
+    </article>
+  </section>
+
+  <section class="transactions-card">
+    <div class="toolbar">
+      <div class="search-wrapper">
+        <i class="bi bi-search"></i>
+
+        <input
+          type="search"
+          placeholder="Search by product name or ID"
+          [value]="searchValue"
+          (input)="search($event)"
+        />
+      </div>
+
+      <div class="type-filters">
+        <button
+          type="button"
+          [class.active]="selectedType === 'ALL'"
+          (click)="setTypeFilter('ALL')"
+        >
+          All
+        </button>
+
+        <button
+          type="button"
+          [class.active]="
+            selectedType === 'STOCK_IN'
+          "
+          (click)="setTypeFilter('STOCK_IN')"
+        >
+          Stock in
+        </button>
+
+        <button
+          type="button"
+          [class.active]="
+            selectedType === 'STOCK_OUT'
+          "
+          (click)="setTypeFilter('STOCK_OUT')"
+        >
+          Stock out
+        </button>
+      </div>
+    </div>
+
+    <div
+      *ngIf="isLoading"
+      class="state-container"
+    >
+      <div class="spinner"></div>
+      <p>Loading transactions...</p>
+    </div>
+
+    <div
+      *ngIf="
+        !isLoading &&
+        filteredTransactions.length === 0
+      "
+      class="state-container"
+    >
+      <i class="bi bi-clock-history empty-icon"></i>
+      <h3>No transactions found</h3>
+      <p>
+        Stock movements will appear here.
+      </p>
+    </div>
+
+    <div
+      *ngIf="
+        !isLoading &&
+        filteredTransactions.length > 0
+      "
+      class="table-wrapper"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th>Date and time</th>
+            <th>Product</th>
+            <th>Type</th>
+            <th>Quantity</th>
+            <th>Stock before</th>
+            <th>Stock after</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            *ngFor="
+              let transaction of
+                filteredTransactions
+            "
+          >
+            <td>
+              {{
+                transaction.createdAt
+                  | date:'medium'
+              }}
+            </td>
+
+            <td>
+              <div class="product-cell">
+                <strong>
+                  {{ transaction.productName }}
+                </strong>
+
+                <span>
+                  Product ID:
+                  {{ transaction.productId }}
+                </span>
+              </div>
+            </td>
+
+            <td>
+              <span
+                class="type-badge"
+                [class.stock-in]="
+                  transaction.transactionType ===
+                    'STOCK_IN'
+                "
+                [class.stock-out]="
+                  transaction.transactionType ===
+                    'STOCK_OUT'
+                "
+              >
+                {{
+                  transaction.transactionType ===
+                    'STOCK_IN'
+                    ? 'Stock in'
+                    : 'Stock out'
+                }}
+              </span>
+            </td>
+
+            <td>
+              <strong
+                [class.positive]="
+                  transaction.transactionType ===
+                    'STOCK_IN'
+                "
+                [class.negative]="
+                  transaction.transactionType ===
+                    'STOCK_OUT'
+                "
+              >
+                {{
+                  transaction.transactionType ===
+                    'STOCK_IN'
+                    ? '+'
+                    : '-'
+                }}{{ transaction.quantity }}
+              </strong>
+            </td>
+
+            <td>
+              {{ transaction.stockBefore }}
+            </td>
+
+            <td>
+              {{ transaction.stockAfter }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

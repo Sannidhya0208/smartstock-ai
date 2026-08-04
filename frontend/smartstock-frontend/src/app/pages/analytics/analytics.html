@@ -1,1 +1,239 @@
-<p>analytics works!</p>
+<div class="analytics-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">BUSINESS INTELLIGENCE</p>
+      <h1>Inventory Analytics</h1>
+      <p class="subtitle">
+        Monitor inventory value, stock health,
+        movements and demand forecasts.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="refresh-button"
+      [disabled]="isLoading"
+      (click)="loadAnalytics()"
+    >
+      <i class="bi bi-arrow-clockwise"></i>
+      Refresh
+    </button>
+  </header>
+
+  <div
+    *ngIf="errorMessage"
+    class="alert error-alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <div
+    *ngIf="isLoading"
+    class="loading-state"
+  >
+    <div class="spinner"></div>
+    <p>Loading analytics...</p>
+  </div>
+
+  <ng-container
+    *ngIf="analytics && !isLoading"
+  >
+    <section class="stats-grid">
+      <article class="stat-card">
+        <p>Total products</p>
+        <h2>{{ analytics.totalProducts }}</h2>
+      </article>
+
+      <article class="stat-card">
+        <p>Total inventory value</p>
+        <h2>
+          {{
+            analytics.totalInventoryValue
+              | currency:
+                  'INR':
+                  'symbol':
+                  '1.0-0':
+                  'en-IN'
+          }}
+        </h2>
+      </article>
+
+      <article class="stat-card">
+        <p>Average product price</p>
+        <h2>
+          {{
+            analytics.averageProductPrice
+              | currency:
+                  'INR':
+                  'symbol':
+                  '1.0-0':
+                  'en-IN'
+          }}
+        </h2>
+      </article>
+
+      <article class="stat-card">
+        <p>Average stock level</p>
+        <h2>
+          {{
+            analytics.averageStockLevel
+              | number:'1.1-1'
+          }}
+        </h2>
+      </article>
+    </section>
+
+    <section class="charts-grid">
+      <article class="chart-card">
+        <div class="card-heading">
+          <div>
+            <p>Current distribution</p>
+            <h2>Inventory Health</h2>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas #inventoryChart></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card">
+        <div class="card-heading">
+          <div>
+            <p>Recent activity</p>
+            <h2>Stock Movement Trend</h2>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas #movementChart></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="forecast-card">
+      <div class="forecast-heading">
+        <div>
+          <p>Predictive analytics</p>
+          <h2>Demand Forecast</h2>
+        </div>
+
+        <div class="forecast-days">
+          <button
+            type="button"
+            [class.active]="forecastDays === 7"
+            (click)="changeForecastDays(7)"
+          >
+            7 days
+          </button>
+
+          <button
+            type="button"
+            [class.active]="forecastDays === 14"
+            (click)="changeForecastDays(14)"
+          >
+            14 days
+          </button>
+
+          <button
+            type="button"
+            [class.active]="forecastDays === 30"
+            (click)="changeForecastDays(30)"
+          >
+            30 days
+          </button>
+        </div>
+      </div>
+
+      <div
+        *ngIf="isForecastLoading"
+        class="forecast-loading"
+      >
+        Calculating forecasts...
+      </div>
+
+      <div
+        *ngIf="
+          !isForecastLoading &&
+          forecasts.length === 0
+        "
+        class="empty-state"
+      >
+        No forecast data is available.
+      </div>
+
+      <div
+        *ngIf="
+          !isForecastLoading &&
+          forecasts.length > 0
+        "
+        class="table-wrapper"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Current stock</th>
+              <th>Daily demand</th>
+              <th>Predicted demand</th>
+              <th>Recommended reorder</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              *ngFor="
+                let forecast of forecasts
+              "
+            >
+              <td>
+                {{ forecast.productName }}
+              </td>
+
+              <td>
+                {{ forecast.currentStock }}
+              </td>
+
+              <td>
+                {{
+                  forecast.averageDailyDemand
+                    | number:'1.1-2'
+                }}
+              </td>
+
+              <td>
+                {{ forecast.predictedDemand }}
+              </td>
+
+              <td>
+                <strong>
+                  {{
+                    forecast
+                      .recommendedReorderQuantity
+                  }}
+                </strong>
+              </td>
+
+              <td>
+                <span
+                  class="risk-badge"
+                  [class.high-risk]="
+                    forecast
+                      .recommendedReorderQuantity > 0
+                  "
+                  [class.low-risk]="
+                    forecast
+                      .recommendedReorderQuantity === 0
+                  "
+                >
+                  {{ forecast.stockRisk }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </ng-container>
+</div>

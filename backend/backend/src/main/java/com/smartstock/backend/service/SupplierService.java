@@ -1,6 +1,5 @@
 package com.smartstock.backend.service;
 
-
 import com.smartstock.backend.dto.SupplierRequest;
 import com.smartstock.backend.dto.SupplierResponse;
 import com.smartstock.backend.model.Supplier;
@@ -11,81 +10,91 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
-
 @Service
 public class SupplierService {
 
+        private final SupplierRepository supplierRepository;
 
-    private final SupplierRepository supplierRepository;
+        public SupplierService(
+                        SupplierRepository supplierRepository) {
 
+                this.supplierRepository = supplierRepository;
 
-    public SupplierService(
-            SupplierRepository supplierRepository
-    ){
+        }
 
-        this.supplierRepository = supplierRepository;
+        public SupplierResponse createSupplier(
+                        SupplierRequest request) {
 
-    }
+                Supplier supplier = new Supplier();
 
+                supplier.setName(request.getName());
 
+                supplier.setEmail(request.getEmail());
 
-    public SupplierResponse createSupplier(
-            SupplierRequest request
-    ){
+                supplier.setPhone(request.getPhone());
 
-        Supplier supplier = new Supplier();
+                Supplier saved = supplierRepository.save(supplier);
 
+                return mapToResponse(saved);
 
-        supplier.setName(request.getName());
+        }
 
-        supplier.setEmail(request.getEmail());
+        public List<SupplierResponse> getAllSuppliers() {
 
-        supplier.setPhone(request.getPhone());
+                return supplierRepository.findAll()
+                                .stream()
+                                .map(this::mapToResponse)
+                                .collect(Collectors.toList());
 
+        }
 
-        Supplier saved =
-                supplierRepository.save(supplier);
+        private SupplierResponse mapToResponse(
+                        Supplier supplier) {
 
+                SupplierResponse response = new SupplierResponse();
 
-        return mapToResponse(saved);
+                response.setId(supplier.getId());
 
-    }
+                response.setName(supplier.getName());
 
+                response.setEmail(supplier.getEmail());
 
+                response.setPhone(supplier.getPhone());
 
+                return response;
 
-    public List<SupplierResponse> getAllSuppliers(){
+        }
 
-        return supplierRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        public SupplierResponse getSupplierById(Long id) {
 
-    }
+                Supplier supplier = supplierRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Supplier not found"));
 
+                return mapToResponse(supplier);
+        }
 
+        public SupplierResponse updateSupplier(
+                        Long id,
+                        SupplierRequest request) {
 
+                Supplier supplier = supplierRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Supplier not found"));
 
-    private SupplierResponse mapToResponse(
-            Supplier supplier
-    ){
+                supplier.setName(request.getName());
+                supplier.setEmail(request.getEmail());
+                supplier.setPhone(request.getPhone());
 
-        SupplierResponse response =
-                new SupplierResponse();
+                Supplier updated = supplierRepository.save(supplier);
 
+                return mapToResponse(updated);
+        }
 
-        response.setId(supplier.getId());
+        public void deleteSupplier(Long id) {
 
-        response.setName(supplier.getName());
+                Supplier supplier = supplierRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Supplier not found"));
 
-        response.setEmail(supplier.getEmail());
-
-        response.setPhone(supplier.getPhone());
-
-
-        return response;
-
-    }
+                supplierRepository.delete(supplier);
+        }
 
 }

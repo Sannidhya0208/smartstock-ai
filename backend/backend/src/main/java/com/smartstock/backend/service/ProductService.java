@@ -1,12 +1,12 @@
 package com.smartstock.backend.service;
 
-
 import com.smartstock.backend.dto.ProductRequest;
 import com.smartstock.backend.dto.ProductResponse;
 import com.smartstock.backend.model.Category;
 import com.smartstock.backend.model.Product;
 import com.smartstock.backend.model.Supplier;
 import com.smartstock.backend.repository.CategoryRepository;
+import com.smartstock.backend.repository.InventoryRepository;
 import com.smartstock.backend.repository.ProductRepository;
 import com.smartstock.backend.repository.SupplierRepository;
 
@@ -15,278 +15,257 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.smartstock.backend.model.Inventory;
+import com.smartstock.backend.repository.InventoryRepository;
 
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-
-
 @Service
 public class ProductService {
 
+        private final ProductRepository productRepository;
 
-    private final ProductRepository productRepository;
+        private final CategoryRepository categoryRepository;
 
-    private final CategoryRepository categoryRepository;
+        private final SupplierRepository supplierRepository;
 
-    private final SupplierRepository supplierRepository;
+        private final InventoryRepository inventoryRepository;
 
+        public ProductService(
+                        ProductRepository productRepository,
+                        CategoryRepository categoryRepository,
+                        SupplierRepository supplierRepository,
+                        InventoryRepository inventoryRepository) {
+                this.productRepository = productRepository;
+                this.categoryRepository = categoryRepository;
+                this.supplierRepository = supplierRepository;
+                this.inventoryRepository = inventoryRepository;
+        }
 
+        @Transactional
+        public ProductResponse createProduct(ProductRequest request) {
 
-    public ProductService(
-            ProductRepository productRepository,
-            CategoryRepository categoryRepository,
-            SupplierRepository supplierRepository
-    ){
+                Category category = categoryRepository
+                                .findById(request.getCategoryId())
+                                .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        this.productRepository = productRepository;
-        this.categoryRepository = categoryRepository;
-        this.supplierRepository = supplierRepository;
+                Supplier supplier = supplierRepository
+                                .findById(request.getSupplierId())
+                                .orElseThrow(() -> new RuntimeException("Supplier not found"));
 
-    }
+                Product product = new Product();
 
+                product.setName(request.getName());
+                product.setSku(request.getSku());
+                product.setPrice(request.getPrice());
+                product.setQuantity(request.getQuantity());
+                product.setCategory(category);
+                product.setSupplier(supplier);
 
+                Product savedProduct = productRepository.save(product);
 
-    public ProductResponse createProduct(ProductRequest request){
+                if (Boolean.TRUE.equals(request.getAddToInventory())) {
 
+                        int stockLevel = request.getQuantity() != null
+                                        ? request.getQuantity()
+                                        : 0;
 
-        Product product = new Product();
+                        int minimumStock = request.getMinimumStock() != null
+                                        ? request.getMinimumStock()
+                                        : 10;
 
+                        if (stockLevel < 0) {
+                                throw new IllegalArgumentException(
+                                                "Quantity cannot be negative");
+                        }
 
-        product.setName(request.getName());
+                        if (minimumStock < 0) {
+                                throw new IllegalArgumentException(
+                                                "Minimum stock cannot be negative");
+                        }
 
-        product.setSku(request.getSku());
+                        Inventory inventory = new Inventory();
 
-        product.setPrice(request.getPrice());
+                        inventory.setProduct(savedProduct);
+                        inventory.setStockLevel(stockLevel);
+                        inventory.setMinimumStock(minimumStock);
 
-        product.setQuantity(request.getQuantity());
+                        inventoryRepository.save(inventory);
+                }
+                return mapToResponse(savedProduct);
+        }
 
+        public List<ProductResponse> getAllProducts() {
 
-
-        Category category =
-                categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> 
-                    new RuntimeException("Category not found")
-                );
-
-
-        Supplier supplier =
-                supplierRepository.findById(request.getSupplierId())
-                .orElseThrow(() ->
-                    new RuntimeException("Supplier not found")
-                );
-
-
-        product.setCategory(category);
-
-        product.setSupplier(supplier);
-
-
-
-        Product savedProduct =
-                productRepository.save(product);
-
-
-
-        return mapToResponse(savedProduct);
-
-    }
-
-
-
-
-    public List<ProductResponse> getAllProducts(){
-
-
-        return productRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-
-    }
-
-
-
-
-
-    public ProductResponse getProductById(Long id){
-
-
-        Product product =
-                productRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Product not found")
-                );
-
-
-        return mapToResponse(product);
-
-    }
-
-
-
-
-
-    public ProductResponse updateProduct(
-            Long id,
-            ProductRequest request
-    ){
-
-
-        Product product =
-                productRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Product not found")
-                );
-
-
-        product.setName(request.getName());
-
-        product.setSku(request.getSku());
-
-        product.setPrice(request.getPrice());
-
-        product.setQuantity(request.getQuantity());
-
-
-
-        if(request.getCategoryId()!=null){
-
-            Category category =
-                    categoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() ->
-                            new RuntimeException("Category not found")
-                    );
-
-            product.setCategory(category);
+                return productRepository.findAll()
+                                .stream()
+                                .map(this::mapToResponse)
+                                .collect(Collectors.toList());
 
         }
 
+        public ProductResponse getProductById(Long id) {
 
+                Product product = productRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        if(request.getSupplierId()!=null){
-
-            Supplier supplier =
-                    supplierRepository.findById(request.getSupplierId())
-                    .orElseThrow(() ->
-                            new RuntimeException("Supplier not found")
-                    );
-
-            product.setSupplier(supplier);
+                return mapToResponse(product);
 
         }
 
+        @Transactional
+        public ProductResponse updateProduct(
+                        Long id,
+                        ProductRequest request) {
 
+                Product product = productRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        Product updatedProduct =
-                productRepository.save(product);
+                product.setName(request.getName());
 
+                product.setSku(request.getSku());
 
+                product.setPrice(request.getPrice());
 
-        return mapToResponse(updatedProduct);
+                product.setQuantity(request.getQuantity());
 
-    }
+                if (request.getCategoryId() != null) {
 
+                        Category category = categoryRepository.findById(request.getCategoryId())
+                                        .orElseThrow(() -> new RuntimeException("Category not found"));
 
+                        product.setCategory(category);
 
+                }
 
+                if (request.getSupplierId() != null) {
 
-    public void deleteProduct(Long id){
+                        Supplier supplier = supplierRepository.findById(request.getSupplierId())
+                                        .orElseThrow(() -> new RuntimeException("Supplier not found"));
 
-        productRepository.deleteById(id);
+                        product.setSupplier(supplier);
 
-    }
+                }
 
+                Product savedProduct = productRepository.save(product);
 
+                if (Boolean.TRUE.equals(request.getAddToInventory())) {
 
+                        int stockLevel = request.getQuantity() != null
+                                        ? request.getQuantity()
+                                        : 0;
 
+                        int minimumStock = request.getMinimumStock() != null
+                                        ? request.getMinimumStock()
+                                        : 10;
 
-    private ProductResponse mapToResponse(Product product){
+                        if (stockLevel < 0 || minimumStock < 0) {
+                                throw new IllegalArgumentException(
+                                                "Stock values cannot be negative");
+                        }
 
+                        Inventory inventory = inventoryRepository
+                                        .findByProductId(savedProduct.getId())
+                                        .orElseGet(() -> {
+                                                Inventory newInventory = new Inventory();
+                                                newInventory.setProduct(savedProduct);
+                                                return newInventory;
+                                        });
 
-        ProductResponse response =
-                new ProductResponse();
+                        inventory.setStockLevel(stockLevel);
+                        inventory.setMinimumStock(minimumStock);
 
+                        inventoryRepository.save(inventory);
+                }
 
-        response.setId(product.getId());
+                return mapToResponse(savedProduct);
 
-        response.setName(product.getName());
-
-        response.setSku(product.getSku());
-
-        response.setPrice(product.getPrice());
-
-        response.setQuantity(product.getQuantity());
-
-
-        if(product.getCategory()!=null){
-            response.setCategory(
-                    product.getCategory().getName()
-            );
         }
 
+        public void deleteProduct(Long id) {
 
-        if(product.getSupplier()!=null){
-            response.setSupplier(
-                    product.getSupplier().getName()
-            );
+                productRepository.deleteById(id);
+
         }
 
+        private ProductResponse mapToResponse(Product product) {
 
-        return response;
+                ProductResponse response = new ProductResponse();
 
-    }
+                response.setId(product.getId());
+                response.setName(product.getName());
+                response.setSku(product.getSku());
+                response.setPrice(product.getPrice());
+                response.setQuantity(product.getQuantity());
 
-    public ProductPageResponse getProducts(
-                int page,
-                int size,
-                String sortBy,
-                String sortDirection,
-                String search,
-                Long categoryId,
-                Long supplierId) {
+                if (product.getCategory() != null) {
+                        response.setCategoryId(
+                                        product.getCategory().getId());
 
-        Sort sort = sortDirection.equalsIgnoreCase("desc")
-                ? Sort.by(sortBy).descending()
-                : Sort.by(sortBy).ascending();
+                        response.setCategory(
+                                        product.getCategory().getName());
+                }
 
-        Pageable pageable = PageRequest.of(page, size, sort);
+                if (product.getSupplier() != null) {
+                        response.setSupplierId(
+                                        product.getSupplier().getId());
 
-        Page<Product> productPage;
+                        response.setSupplier(
+                                        product.getSupplier().getName());
+                }
 
-        if (search != null && !search.isBlank()) {
-                productPage =
-                        productRepository
-                                .findByNameContainingIgnoreCaseOrSkuContainingIgnoreCase(
-                                        search,
-                                        search,
-                                        pageable
-                              );
-        } else if (categoryId != null) {
-                productPage =
-                        productRepository.findByCategoryId(categoryId, pageable);
-        } else if (supplierId != null) {
-                productPage =
-                        productRepository.findBySupplierId(supplierId, pageable);
-        } else {
-                productPage = productRepository.findAll(pageable);
+                return response;
         }
 
-        List<ProductResponse> products = productPage
-            .getContent()
-            .stream()
-            .map(this::mapToResponse)
-            .toList();
+        public ProductPageResponse getProducts(
+                        int page,
+                        int size,
+                        String sortBy,
+                        String sortDirection,
+                        String search,
+                        Long categoryId,
+                        Long supplierId) {
 
-        return new ProductPageResponse(
-            products,
-            productPage.getNumber(),
-            productPage.getSize(),
-            productPage.getTotalElements(),
-            productPage.getTotalPages(),
-            productPage.isLast());
+                Sort sort = sortDirection.equalsIgnoreCase("desc")
+                                ? Sort.by(sortBy).descending()
+                                : Sort.by(sortBy).ascending();
+
+                Pageable pageable = PageRequest.of(page, size, sort);
+
+                Page<Product> productPage;
+
+                if (search != null && !search.isBlank()) {
+                        productPage = productRepository
+                                        .findByNameContainingIgnoreCaseOrSkuContainingIgnoreCase(
+                                                        search,
+                                                        search,
+                                                        pageable);
+                } else if (categoryId != null) {
+                        productPage = productRepository.findByCategoryId(categoryId, pageable);
+                } else if (supplierId != null) {
+                        productPage = productRepository.findBySupplierId(supplierId, pageable);
+                } else {
+                        productPage = productRepository.findAll(pageable);
+                }
+
+                List<ProductResponse> products = productPage
+                                .getContent()
+                                .stream()
+                                .map(this::mapToResponse)
+                                .toList();
+
+                return new ProductPageResponse(
+                                products,
+                                productPage.getNumber(),
+                                productPage.getSize(),
+                                productPage.getTotalElements(),
+                                productPage.getTotalPages(),
+                                productPage.isLast());
         }
 
 }

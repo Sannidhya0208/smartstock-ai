@@ -1,1 +1,584 @@
-<p>products works!</p>
+<div class="products-page">
+
+  <main class="main-content">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">
+          INVENTORY MANAGEMENT
+        </p>
+
+        <h1>Products</h1>
+
+        <p class="subtitle">
+          Manage products, pricing, stock and suppliers.
+        </p>
+      </div>
+
+      <button
+        class="primary-button"
+        type="button"
+        (click)="openCreateForm()"
+      >
+        <i class="bi bi-plus-lg"></i>
+        Add Product
+      </button>
+    </header>
+
+    <div
+      *ngIf="successMessage"
+      class="alert success-alert"
+    >
+      {{ successMessage }}
+    </div>
+
+    <div
+      *ngIf="errorMessage && !showForm"
+      class="alert error-alert"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <section class="products-card">
+      <div class="toolbar">
+        <div class="search-wrapper">
+          <i class="bi bi-search"></i>
+
+          <input
+            type="search"
+            placeholder="Search by name or SKU"
+            [value]="searchValue"
+            (input)="search($event)"
+          />
+
+          <button
+            *ngIf="searchValue"
+            type="button"
+            class="clear-search"
+            (click)="clearSearch()"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <span class="result-count">
+          {{ totalElements }}
+          {{ totalElements === 1 ? 'product' : 'products' }}
+        </span>
+      </div>
+
+      <div
+        *ngIf="isLoading"
+        class="state-container"
+      >
+        <div class="spinner"></div>
+        <p>Loading products...</p>
+      </div>
+
+      <div
+        *ngIf="
+          !isLoading &&
+          products.length === 0
+        "
+        class="state-container"
+      >
+        <i class="bi bi-box-seam empty-icon"></i>
+
+        <h3>No products found</h3>
+
+        <p>
+          {{
+            searchValue
+              ? 'Try using a different search term.'
+              : 'Add your first product to get started.'
+          }}
+        </p>
+      </div>
+
+      <div
+        *ngIf="
+          !isLoading &&
+          products.length > 0
+        "
+        class="table-wrapper"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th>
+                <button
+                  type="button"
+                  (click)="sort('name')"
+                >
+                  Product
+                  <i class="bi bi-arrow-down-up"></i>
+                </button>
+              </th>
+
+              <th>
+                <button
+                  type="button"
+                  (click)="sort('sku')"
+                >
+                  SKU
+                  <i class="bi bi-arrow-down-up"></i>
+                </button>
+              </th>
+
+              <th>Category</th>
+
+              <th>
+                <button
+                  type="button"
+                  (click)="sort('price')"
+                >
+                  Price
+                  <i class="bi bi-arrow-down-up"></i>
+                </button>
+              </th>
+
+              <th>
+                <button
+                  type="button"
+                  (click)="sort('quantity')"
+                >
+                  Quantity
+                  <i class="bi bi-arrow-down-up"></i>
+                </button>
+              </th>
+
+              <th>Supplier</th>
+
+              <th class="actions-heading">
+                Actions
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let product of products">
+              <td>
+                <div class="product-name">
+                  <div class="product-avatar">
+                    {{
+                      product.name
+                        .charAt(0)
+                        .toUpperCase()
+                    }}
+                  </div>
+
+                  <strong>
+                    {{ product.name }}
+                  </strong>
+                </div>
+              </td>
+
+              <td>
+                <span class="sku">
+                  {{ product.sku }}
+                </span>
+              </td>
+
+              <td>
+                {{
+                  product.category ||
+                  'Unassigned'
+                }}
+              </td>
+
+              <td>
+                {{
+                  product.price
+                    | currency:
+                        'INR':
+                        'symbol':
+                        '1.2-2':
+                        'en-IN'
+                }}
+              </td>
+
+              <td>
+                <span
+                  class="stock-badge"
+                  [class.low-stock]="
+                    product.quantity > 0 &&
+                    product.quantity <= 10
+                  "
+                  [class.out-of-stock]="
+                    product.quantity === 0
+                  "
+                >
+                  {{
+                    product.quantity === 0
+                      ? 'Out of stock'
+                      : product.quantity
+                  }}
+                </span>
+              </td>
+
+              <td>
+                {{
+                  product.supplier ||
+                  'Unassigned'
+                }}
+              </td>
+
+              <td class="actions-cell">
+                <button
+                  class="icon-button"
+                  type="button"
+                  title="Edit product"
+                  (click)="openEditForm(product)"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+
+                <button
+                  class="icon-button delete-button"
+                  type="button"
+                  title="Delete product"
+                  (click)="deleteProduct(product)"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer
+        *ngIf="
+          !isLoading &&
+          totalElements > 0
+        "
+        class="pagination"
+      >
+        <span>
+          Showing {{ startRecord }}–{{ endRecord }}
+          of {{ totalElements }}
+        </span>
+
+        <div class="pagination-buttons">
+          <button
+            type="button"
+            [disabled]="currentPage === 0"
+            (click)="previousPage()"
+          >
+            <i class="bi bi-chevron-left"></i>
+            Previous
+          </button>
+
+          <span>
+            Page {{ currentPage + 1 }}
+            of {{ totalPages }}
+          </span>
+
+          <button
+            type="button"
+            [disabled]="isLastPage"
+            (click)="nextPage()"
+          >
+            Next
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<div
+  *ngIf="showForm"
+  class="modal-backdrop"
+  (click)="closeForm()"
+>
+  <section
+    class="modal-card"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow">
+          {{
+            isEditing
+              ? 'UPDATE PRODUCT'
+              : 'NEW PRODUCT'
+          }}
+        </p>
+
+        <h2>
+          {{
+            isEditing
+              ? 'Edit Product'
+              : 'Add Product'
+          }}
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        class="close-button"
+        [disabled]="isSaving"
+        (click)="closeForm()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </header>
+
+    <div
+      *ngIf="errorMessage"
+      class="alert error-alert"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <form
+      [formGroup]="productForm"
+      (ngSubmit)="saveProduct()"
+    >
+      <div class="form-grid">
+
+        <div class="form-group full-width">
+          <label for="name">
+            Product name
+          </label>
+
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            placeholder="Enter product name"
+          />
+
+          <small
+            *ngIf="
+              productForm.controls.name.touched &&
+              productForm.controls.name.invalid
+            "
+          >
+            Enter a valid product name.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="sku">
+            SKU
+          </label>
+
+          <input
+            id="sku"
+            type="text"
+            formControlName="sku"
+            placeholder="Example: LAP-001"
+          />
+
+          <small
+            *ngIf="
+              productForm.controls.sku.touched &&
+              productForm.controls.sku.invalid
+            "
+          >
+            Enter a valid SKU.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="price">
+            Price
+          </label>
+
+          <input
+            id="price"
+            type="number"
+            min="0"
+            step="0.01"
+            formControlName="price"
+            placeholder="0.00"
+          />
+
+          <small
+            *ngIf="
+              productForm.controls.price.touched &&
+              productForm.controls.price.invalid
+            "
+          >
+            Enter a valid price.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="quantity">
+            Quantity
+          </label>
+
+          <input
+            id="quantity"
+            type="number"
+            min="0"
+            step="1"
+            formControlName="quantity"
+            placeholder="0"
+          />
+
+          <small
+            *ngIf="
+              productForm.controls.quantity.touched &&
+              productForm.controls.quantity.invalid
+            "
+          >
+            Quantity cannot be negative.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="category">
+            Category
+          </label>
+
+          <select
+            id="category"
+            formControlName="categoryId"
+          >
+            <option [ngValue]="0">
+              Select category
+            </option>
+
+            <option
+              *ngFor="let category of categories"
+              [ngValue]="category.id"
+            >
+              {{ category.name }}
+            </option>
+          </select>
+
+          <small
+            *ngIf="
+              productForm.controls.categoryId.touched &&
+              productForm.controls.categoryId.invalid
+            "
+          >
+            Select a category.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="supplier">
+            Supplier
+          </label>
+
+          <select
+            id="supplier"
+            formControlName="supplierId"
+          >
+            <option [ngValue]="0">
+              Select supplier
+            </option>
+
+            <option
+              *ngFor="let supplier of suppliers"
+              [ngValue]="supplier.id"
+            >
+              {{ supplier.name }}
+            </option>
+          </select>
+
+          <small
+            *ngIf="
+              productForm.controls.supplierId.touched &&
+              productForm.controls.supplierId.invalid
+            "
+          >
+            Select a supplier.
+          </small>
+        </div>
+
+        <div
+          class="form-group full-width inventory-option"
+        >
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              formControlName="addToInventory"
+            />
+
+            <span>
+              Add this product to inventory
+            </span>
+          </label>
+
+          <p class="field-description">
+            The product quantity will be used as the initial inventory stock.
+          </p>
+        </div>
+
+        <div
+          *ngIf="
+            productForm.controls.addToInventory.value
+          "
+          class="form-group full-width"
+        >
+          <label for="minimumStock">
+            Minimum stock threshold
+          </label>
+
+          <input
+            id="minimumStock"
+            type="number"
+            min="0"
+            step="1"
+            formControlName="minimumStock"
+            placeholder="10"
+          />
+
+          <small
+            *ngIf="
+              productForm.controls.minimumStock.touched &&
+              productForm.controls.minimumStock.invalid
+            "
+          >
+            Minimum stock cannot be negative.
+          </small>
+
+          <p class="field-description">
+            SmartStock will flag this product when its stock reaches or falls
+            below this value.
+          </p>
+        </div>
+
+      </div>
+
+      <footer class="modal-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="isSaving"
+          (click)="closeForm()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="primary-button"
+          [disabled]="
+            productForm.invalid ||
+            isSaving
+          "
+        >
+          <span
+            *ngIf="isSaving"
+            class="spinner-border spinner-border-sm"
+          ></span>
+
+          {{
+            isSaving
+              ? 'Saving...'
+              : isEditing
+                ? 'Update Product'
+                : 'Create Product'
+          }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>

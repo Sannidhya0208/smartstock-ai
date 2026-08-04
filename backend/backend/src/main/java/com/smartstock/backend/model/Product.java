@@ -34,6 +34,12 @@ public class Product {
     @ManyToOne
     private Supplier supplier;
 
+    private Boolean addToInventory;
+
+    private Integer stockLevel;
+
+    private Integer minimumStock;
+
 
 
     public Product(){
@@ -107,6 +113,30 @@ public class Product {
 
     public void setSupplier(Supplier supplier){
         this.supplier=supplier;
+    }
+
+    public Boolean getaddToInventory() {
+        return addToInventory;
+    }
+
+    public void setaddToInventory(Boolean addToInventory) {
+        this.addToInventory = addToInventory;
+    }
+
+    public Integer getStockLevel() {
+        return stockLevel;
+    }
+
+    public void setStockLevel(Integer stockLevel) {
+        this.stockLevel = stockLevel;
+    }
+
+    public Integer getMinimumStock() {
+        return minimumStock;
+    }
+
+    public void setMinimumStock(Integer minimumStock) {
+        this.minimumStock = minimumStock;
     }
 
 }

@@ -18,6 +18,7 @@ import com.smartstock.backend.model.StockTransaction;
 import com.smartstock.backend.model.TransactionType;
 import com.smartstock.backend.repository.InventoryRepository;
 import com.smartstock.backend.repository.StockTransactionRepository;
+import com.smartstock.backend.repository.ProductRepository;
 
 import com.smartstock.backend.dto.AiDashboardResponse;
 import java.math.BigDecimal;
@@ -29,16 +30,18 @@ public class AiInsightService {
     private final InventoryRepository inventoryRepository;
     private final StockTransactionRepository transactionRepository;
     private final String model;
+    private final ProductRepository productRepository;
 
     public AiInsightService(
             RestClient ollamaRestClient,
             InventoryRepository inventoryRepository,
             StockTransactionRepository transactionRepository,
+            ProductRepository productRepository,
             @Value("${ollama.model}") String model) {
-
         this.ollamaRestClient = ollamaRestClient;
         this.inventoryRepository = inventoryRepository;
         this.transactionRepository = transactionRepository;
+        this.productRepository = productRepository;
         this.model = model;
     }
 
@@ -228,11 +231,7 @@ public class AiInsightService {
 
         List<StockTransaction> transactions = transactionRepository.findAll();
 
-        long totalProducts = inventoryItems.stream()
-                .filter(item -> item.getProduct() != null)
-                .map(item -> item.getProduct().getId())
-                .distinct()
-                .count();
+        long totalProducts = productRepository.count();
 
         long totalInventoryItems = inventoryItems.size();
 

@@ -1,1 +1,225 @@
-<p>ai-assistant works!</p>
+<div class="ai-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">SMARTSTOCK INTELLIGENCE</p>
+
+      <h1>AI Inventory Assistant</h1>
+
+      <p class="subtitle">
+        Ask questions using your live inventory and transaction data.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="clear-button"
+      [disabled]="isLoading"
+      (click)="clearConversation()"
+    >
+      <i class="bi bi-trash3"></i>
+      Clear conversation
+    </button>
+  </header>
+
+  <div class="assistant-layout">
+    <aside class="suggestions-card">
+      <div class="suggestions-heading">
+        <div class="suggestion-icon">
+          <i class="bi bi-lightbulb"></i>
+        </div>
+
+        <div>
+          <p>Try asking</p>
+          <h2>Suggested Questions</h2>
+        </div>
+      </div>
+
+      <div class="suggestion-list">
+        <button
+          *ngFor="
+            let suggestion of suggestedQuestions
+          "
+          type="button"
+          [disabled]="isLoading"
+          (click)="useSuggestion(suggestion)"
+        >
+          <i class="bi bi-arrow-up-right-circle"></i>
+          <span>{{ suggestion }}</span>
+        </button>
+      </div>
+
+      <div class="assistant-note">
+        <i class="bi bi-shield-check"></i>
+
+        <p>
+          SmartStock AI answers using only the inventory
+          and transaction data supplied by your backend.
+        </p>
+      </div>
+    </aside>
+
+    <section class="chat-card">
+      <header class="chat-header">
+        <div class="assistant-profile">
+          <div class="assistant-avatar">
+            <i class="bi bi-stars"></i>
+          </div>
+
+          <div>
+            <h2>SmartStock AI</h2>
+
+            <p>
+              <span class="status-dot"></span>
+              Inventory assistant
+            </p>
+          </div>
+        </div>
+
+        <span class="model-label">
+          Ollama
+        </span>
+      </header>
+
+      <div
+        #chatContainer
+        class="chat-messages"
+      >
+        <article
+          *ngFor="
+            let message of messages;
+            trackBy: trackMessage
+          "
+          class="message-row"
+          [class.user-row]="
+            message.role === 'user'
+          "
+          [class.assistant-row]="
+            message.role === 'assistant'
+          "
+        >
+          <div
+            *ngIf="message.role === 'assistant'"
+            class="message-avatar assistant-message-avatar"
+          >
+            <i class="bi bi-stars"></i>
+          </div>
+
+          <div class="message-content">
+            <div
+              class="message-bubble"
+              [class.user-message]="
+                message.role === 'user'
+              "
+              [class.assistant-message]="
+                message.role === 'assistant'
+              "
+            >
+              {{ message.content }}
+            </div>
+
+            <div class="message-meta">
+              <span>
+                {{
+                  message.createdAt
+                    | date:'shortTime'
+                }}
+              </span>
+
+              <span
+                *ngIf="message.model"
+              >
+                {{ message.model }}
+              </span>
+            </div>
+          </div>
+
+          <div
+            *ngIf="message.role === 'user'"
+            class="message-avatar user-message-avatar"
+          >
+            <i class="bi bi-person"></i>
+          </div>
+        </article>
+
+        <article
+          *ngIf="isLoading"
+          class="message-row assistant-row"
+        >
+          <div
+            class="message-avatar assistant-message-avatar"
+          >
+            <i class="bi bi-stars"></i>
+          </div>
+
+          <div class="message-content">
+            <div
+              class="message-bubble assistant-message typing-message"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+
+            <div class="message-meta">
+              SmartStock AI is analysing your inventory
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div
+        *ngIf="errorMessage"
+        class="error-message"
+      >
+        <i class="bi bi-exclamation-triangle"></i>
+        {{ errorMessage }}
+      </div>
+
+      <form
+        class="chat-form"
+        [formGroup]="questionForm"
+        (ngSubmit)="sendQuestion()"
+      >
+        <div class="input-container">
+          <textarea
+            rows="2"
+            maxlength="500"
+            formControlName="question"
+            placeholder="Ask a question about your inventory..."
+            (keydown)="handleKeydown($event)"
+          ></textarea>
+
+          <button
+            type="submit"
+            class="send-button"
+            [disabled]="
+              questionForm.invalid ||
+              isLoading
+            "
+            title="Send question"
+          >
+            <i
+              class="bi"
+              [class.bi-send]="!isLoading"
+              [class.bi-hourglass-split]="isLoading"
+            ></i>
+          </button>
+        </div>
+
+        <div class="form-footer">
+          <span>
+            Press Enter to send and Shift + Enter
+            for a new line.
+          </span>
+
+          <span>
+            {{
+              questionForm.controls
+                .question.value.length
+            }}/500
+          </span>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

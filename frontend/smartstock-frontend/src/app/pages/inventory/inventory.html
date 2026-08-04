@@ -1,1 +1,371 @@
-<p>inventory works!</p>
+<div class="inventory-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">WAREHOUSE MANAGEMENT</p>
+      <h1>Inventory</h1>
+      <p class="subtitle">
+        Monitor stock levels and record stock movements.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="refresh-button"
+      [disabled]="isLoading"
+      (click)="loadInventory()"
+    >
+      <i class="bi bi-arrow-clockwise"></i>
+      Refresh
+    </button>
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="alert success-alert"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage && !showStockModal"
+    class="alert error-alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="stats-grid">
+    <article class="stat-card">
+      <div class="stat-icon total-icon">
+        <i class="bi bi-boxes"></i>
+      </div>
+
+      <div>
+        <p>Total inventory records</p>
+        <h2>{{ totalItems }}</h2>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-icon healthy-icon">
+        <i class="bi bi-check-circle"></i>
+      </div>
+
+      <div>
+        <p>Healthy stock</p>
+        <h2>{{ healthyCount }}</h2>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-icon low-icon">
+        <i class="bi bi-exclamation-circle"></i>
+      </div>
+
+      <div>
+        <p>Low stock</p>
+        <h2>{{ lowStockCount }}</h2>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-icon out-icon">
+        <i class="bi bi-x-circle"></i>
+      </div>
+
+      <div>
+        <p>Out of stock</p>
+        <h2>{{ outOfStockCount }}</h2>
+      </div>
+    </article>
+  </section>
+
+  <section class="inventory-card">
+    <div class="toolbar">
+      <div class="search-wrapper">
+        <i class="bi bi-search"></i>
+
+        <input
+          type="search"
+          placeholder="Search by product name"
+          [value]="searchValue"
+          (input)="search($event)"
+        />
+      </div>
+
+      <div class="status-filters">
+        <button
+          type="button"
+          [class.active]="selectedStatus === 'ALL'"
+          (click)="setStatusFilter('ALL')"
+        >
+          All
+        </button>
+
+        <button
+          type="button"
+          [class.active]="selectedStatus === 'HEALTHY'"
+          (click)="setStatusFilter('HEALTHY')"
+        >
+          Healthy
+        </button>
+
+        <button
+          type="button"
+          [class.active]="selectedStatus === 'LOW'"
+          (click)="setStatusFilter('LOW')"
+        >
+          Low stock
+        </button>
+
+        <button
+          type="button"
+          [class.active]="selectedStatus === 'OUT'"
+          (click)="setStatusFilter('OUT')"
+        >
+          Out of stock
+        </button>
+      </div>
+    </div>
+
+    <div
+      *ngIf="isLoading"
+      class="state-container"
+    >
+      <div class="spinner"></div>
+      <p>Loading inventory...</p>
+    </div>
+
+    <div
+      *ngIf="
+        !isLoading &&
+        filteredInventory.length === 0
+      "
+      class="state-container"
+    >
+      <i class="bi bi-boxes empty-icon"></i>
+      <h3>No inventory records found</h3>
+      <p>
+        Try changing the search or status filter.
+      </p>
+    </div>
+
+    <div
+      *ngIf="
+        !isLoading &&
+        filteredInventory.length > 0
+      "
+      class="table-wrapper"
+    >
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Current stock</th>
+            <th>Minimum stock</th>
+            <th>Status</th>
+            <th class="actions-heading">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            *ngFor="
+              let item of filteredInventory
+            "
+          >
+            <td>
+              <div class="product-cell">
+                <div class="product-avatar">
+                  {{
+                    item.productName
+                      .charAt(0)
+                      .toUpperCase()
+                  }}
+                </div>
+
+                <div>
+                  <strong>
+                    {{ item.productName }}
+                  </strong>
+
+                  <span>
+                    Product ID: {{ item.productId }}
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <strong class="stock-number">
+                {{ item.stockLevel }}
+              </strong>
+            </td>
+
+            <td>
+              {{ item.minimumStock }}
+            </td>
+
+            <td>
+              <span
+                class="status-badge"
+                [class.healthy]="
+                  getStatus(item) === 'HEALTHY'
+                "
+                [class.low]="
+                  getStatus(item) === 'LOW'
+                "
+                [class.out]="
+                  getStatus(item) === 'OUT'
+                "
+              >
+                {{ getStatusLabel(item) }}
+              </span>
+            </td>
+
+            <td class="actions-cell">
+              <button
+                type="button"
+                class="action-button stock-in-button"
+                (click)="openStockModal(item, 'IN')"
+              >
+                <i class="bi bi-plus-lg"></i>
+                Stock in
+              </button>
+
+              <button
+                type="button"
+                class="action-button stock-out-button"
+                [disabled]="item.stockLevel === 0"
+                (click)="openStockModal(item, 'OUT')"
+              >
+                <i class="bi bi-dash-lg"></i>
+                Stock out
+              </button>
+
+              <button
+                type="button"
+                class="icon-button delete-button"
+                title="Delete inventory"
+                (click)="deleteInventory(item)"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div
+  *ngIf="showStockModal && selectedInventory"
+  class="modal-backdrop"
+  (click)="closeStockModal()"
+>
+  <section
+    class="modal-card"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow">
+          {{
+            stockAction === 'IN'
+              ? 'STOCK IN'
+              : 'STOCK OUT'
+          }}
+        </p>
+
+        <h2>
+          {{ selectedInventory.productName }}
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        class="close-button"
+        [disabled]="isSaving"
+        (click)="closeStockModal()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </header>
+
+    <div class="stock-summary">
+      <span>Current stock</span>
+      <strong>
+        {{ selectedInventory.stockLevel }}
+      </strong>
+    </div>
+
+    <div
+      *ngIf="errorMessage"
+      class="alert error-alert"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <form
+      [formGroup]="stockForm"
+      (ngSubmit)="submitStockChange()"
+    >
+      <div class="form-group">
+        <label for="quantity">
+          {{
+            stockAction === 'IN'
+              ? 'Quantity to add'
+              : 'Quantity to remove'
+          }}
+        </label>
+
+        <input
+          id="quantity"
+          type="number"
+          min="1"
+          step="1"
+          formControlName="quantity"
+        />
+
+        <small
+          *ngIf="
+            stockForm.controls.quantity.touched &&
+            stockForm.controls.quantity.invalid
+          "
+        >
+          Enter a quantity greater than zero.
+        </small>
+      </div>
+
+      <footer class="modal-actions">
+        <button
+          type="button"
+          class="secondary-button"
+          [disabled]="isSaving"
+          (click)="closeStockModal()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="primary-button"
+          [disabled]="
+            stockForm.invalid ||
+            isSaving
+          "
+        >
+          {{
+            isSaving
+              ? 'Saving...'
+              : stockAction === 'IN'
+                ? 'Add Stock'
+                : 'Remove Stock'
+          }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>
