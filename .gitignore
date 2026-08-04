@@ -76,3 +76,9 @@ temp/
 
 application-secret.yml
 application-local.yml
+
+**/.env
+**/.env.local
+**/.env.production
+**/application-secrets.properties
+**/nstart-local.ps1

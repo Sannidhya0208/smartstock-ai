@@ -1,44 +1,48 @@
 package com.smartstock.backend.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import com.smartstock.backend.dto.AiChatResponse;
+import com.smartstock.backend.dto.AiDashboardResponse;
 import com.smartstock.backend.dto.AiInsightResponse;
-import com.smartstock.backend.dto.OllamaChatRequest;
-import com.smartstock.backend.dto.OllamaChatResponse;
+import com.smartstock.backend.dto.HostedChatRequest;
+import com.smartstock.backend.dto.HostedChatResponse;
 import com.smartstock.backend.exception.AiServiceException;
 import com.smartstock.backend.model.Inventory;
 import com.smartstock.backend.model.StockTransaction;
 import com.smartstock.backend.model.TransactionType;
 import com.smartstock.backend.repository.InventoryRepository;
-import com.smartstock.backend.repository.StockTransactionRepository;
 import com.smartstock.backend.repository.ProductRepository;
-
-import com.smartstock.backend.dto.AiDashboardResponse;
-import java.math.BigDecimal;
+import com.smartstock.backend.repository.StockTransactionRepository;
 
 @Service
 public class AiInsightService {
 
-    private final RestClient ollamaRestClient;
+    private final RestClient hostedLlmRestClient;
     private final InventoryRepository inventoryRepository;
     private final StockTransactionRepository transactionRepository;
-    private final String model;
     private final ProductRepository productRepository;
+    private final String model;
 
     public AiInsightService(
-            RestClient ollamaRestClient,
+            @Qualifier("hostedLlmRestClient")
+            RestClient hostedLlmRestClient,
             InventoryRepository inventoryRepository,
             StockTransactionRepository transactionRepository,
             ProductRepository productRepository,
-            @Value("${ollama.model}") String model) {
-        this.ollamaRestClient = ollamaRestClient;
+            @Value("${llm.model}") String model
+    ) {
+        this.hostedLlmRestClient = hostedLlmRestClient;
         this.inventoryRepository = inventoryRepository;
         this.transactionRepository = transactionRepository;
         this.productRepository = productRepository;
@@ -47,39 +51,56 @@ public class AiInsightService {
 
     public AiInsightResponse generateInventoryInsights() {
 
-        List<Inventory> inventoryItems = inventoryRepository.findAll();
+        List<Inventory> inventoryItems =
+                inventoryRepository.findAll();
 
-        List<StockTransaction> transactions = transactionRepository.findAll();
+        List<StockTransaction> transactions =
+                transactionRepository.findAll();
 
-        long totalInventoryItems = inventoryItems.size();
+        long totalInventoryItems =
+                inventoryItems.size();
 
         long lowStockItems = inventoryItems.stream()
-                .filter(item -> item.getStockLevel() != null
-                        && item.getMinimumStock() != null
-                        && item.getStockLevel() > 0
-                        && item.getStockLevel() <= item.getMinimumStock())
+                .filter(item ->
+                        item.getStockLevel() != null
+                                && item.getMinimumStock() != null
+                                && item.getStockLevel() > 0
+                                && item.getStockLevel()
+                                <= item.getMinimumStock()
+                )
                 .count();
 
         long outOfStockItems = inventoryItems.stream()
-                .filter(item -> item.getStockLevel() != null
-                        && item.getStockLevel() == 0)
+                .filter(item ->
+                        item.getStockLevel() != null
+                                && item.getStockLevel() == 0
+                )
                 .count();
 
         int totalStockOutQuantity = transactions.stream()
-                .filter(transaction -> transaction.getTransactionType() == TransactionType.STOCK_OUT)
+                .filter(transaction ->
+                        transaction.getTransactionType()
+                                == TransactionType.STOCK_OUT
+                )
                 .mapToInt(StockTransaction::getQuantity)
                 .sum();
 
         String inventoryDetails = inventoryItems.stream()
                 .filter(item -> item.getProduct() != null)
                 .map(item -> String.format(
-                        "- Product: %s, Current stock: %s, Minimum stock: %s",
+                        "- Product: %s, Current stock: %s, "
+                                + "Minimum stock: %s",
                         item.getProduct().getName(),
                         item.getStockLevel(),
-                        item.getMinimumStock()))
+                        item.getMinimumStock()
+                ))
                 .reduce(
                         "",
-                        (result, item) -> result + item + System.lineSeparator());
+                        (result, item) ->
+                                result
+                                        + item
+                                        + System.lineSeparator()
+                );
 
         String prompt = """
                 You are an inventory management assistant.
@@ -110,68 +131,88 @@ public class AiInsightService {
                 lowStockItems,
                 outOfStockItems,
                 totalStockOutQuantity,
-                inventoryDetails);
+                inventoryDetails.isBlank()
+                        ? "No inventory data available."
+                        : inventoryDetails
+        );
 
-        OllamaChatRequest request = new OllamaChatRequest(
-                model,
-                List.of(
-                        new OllamaChatRequest.Message(
-                                "system",
-                                "Provide accurate and concise inventory analysis."),
-                        new OllamaChatRequest.Message(
-                                "user",
-                                prompt)),
-                false);
+        HostedChatRequest request =
+                createHostedRequest(
+                        "Provide accurate and concise "
+                                + "inventory analysis.",
+                        prompt
+                );
 
-        String insight = callOllama(request);
+        String insight =
+                callHostedLlm(request);
 
         return new AiInsightResponse(
                 LocalDateTime.now(),
                 model,
-                insight);
+                insight
+        );
     }
 
-    public AiChatResponse askInventoryQuestion(String question) {
+    public AiChatResponse askInventoryQuestion(
+            String question
+    ) {
 
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException(
-                    "Question must not be empty");
+                    "Question must not be empty"
+            );
         }
 
-        List<Inventory> inventoryItems = inventoryRepository.findAll();
+        List<Inventory> inventoryItems =
+                inventoryRepository.findAll();
 
-        List<StockTransaction> transactions = transactionRepository.findAll();
+        List<StockTransaction> transactions =
+                transactionRepository.findAll();
 
         String inventoryDetails = inventoryItems.stream()
                 .filter(item -> item.getProduct() != null)
                 .map(item -> String.format(
-                        "- Product ID: %d, Product: %s, SKU: %s, " +
-                                "Current stock: %s, Minimum stock: %s, Price: %s",
+                        "- Product ID: %d, Product: %s, SKU: %s, "
+                                + "Current stock: %s, "
+                                + "Minimum stock: %s, Price: %s",
                         item.getProduct().getId(),
                         item.getProduct().getName(),
                         item.getProduct().getSku(),
                         item.getStockLevel(),
                         item.getMinimumStock(),
-                        item.getProduct().getPrice()))
+                        item.getProduct().getPrice()
+                ))
                 .reduce(
                         "",
-                        (result, item) -> result + item + System.lineSeparator());
+                        (result, item) ->
+                                result
+                                        + item
+                                        + System.lineSeparator()
+                );
 
         String transactionDetails = transactions.stream()
                 .limit(100)
+                .filter(transaction ->
+                        transaction.getProduct() != null
+                )
                 .map(transaction -> String.format(
-                        "- Product: %s, Type: %s, Quantity: %d, " +
-                                "Stock before: %d, Stock after: %d, Date: %s",
+                        "- Product: %s, Type: %s, Quantity: %d, "
+                                + "Stock before: %d, "
+                                + "Stock after: %d, Date: %s",
                         transaction.getProduct().getName(),
                         transaction.getTransactionType(),
                         transaction.getQuantity(),
                         transaction.getStockBefore(),
                         transaction.getStockAfter(),
-                        transaction.getCreatedAt()))
+                        transaction.getCreatedAt()
+                ))
                 .reduce(
                         "",
-                        (result, transaction) -> result + transaction
-                                + System.lineSeparator());
+                        (result, transaction) ->
+                                result
+                                        + transaction
+                                        + System.lineSeparator()
+                );
 
         String prompt = """
                 You are SmartStock AI, an inventory management assistant.
@@ -203,84 +244,119 @@ public class AiInsightService {
                         : inventoryDetails,
                 transactionDetails.isBlank()
                         ? "No transaction data available."
-                        : transactionDetails);
+                        : transactionDetails
+        );
 
-        OllamaChatRequest request = new OllamaChatRequest(
-                model,
-                List.of(
-                        new OllamaChatRequest.Message(
-                                "system",
-                                "Answer inventory questions accurately using only supplied data."),
-                        new OllamaChatRequest.Message(
-                                "user",
-                                prompt)),
-                false);
+        HostedChatRequest request =
+                createHostedRequest(
+                        "Answer inventory questions accurately "
+                                + "using only supplied data.",
+                        prompt
+                );
 
-        String answer = callOllama(request);
+        String answer =
+                callHostedLlm(request);
 
         return new AiChatResponse(
                 question,
                 answer,
                 model,
-                LocalDateTime.now());
+                LocalDateTime.now()
+        );
     }
 
     public AiDashboardResponse generateDashboardSummary() {
 
-        List<Inventory> inventoryItems = inventoryRepository.findAll();
+        List<Inventory> inventoryItems =
+                inventoryRepository.findAll();
 
-        List<StockTransaction> transactions = transactionRepository.findAll();
+        List<StockTransaction> transactions =
+                transactionRepository.findAll();
 
-        long totalProducts = productRepository.count();
+        long totalProducts =
+                productRepository.count();
 
-        long totalInventoryItems = inventoryItems.size();
+        long totalInventoryItems =
+                inventoryItems.size();
 
         long lowStockItems = inventoryItems.stream()
-                .filter(item -> item.getStockLevel() != null
-                        && item.getMinimumStock() != null
-                        && item.getStockLevel() > 0
-                        && item.getStockLevel() <= item.getMinimumStock())
+                .filter(item ->
+                        item.getStockLevel() != null
+                                && item.getMinimumStock() != null
+                                && item.getStockLevel() > 0
+                                && item.getStockLevel()
+                                <= item.getMinimumStock()
+                )
                 .count();
 
         long outOfStockItems = inventoryItems.stream()
-                .filter(item -> item.getStockLevel() != null
-                        && item.getStockLevel() == 0)
+                .filter(item ->
+                        item.getStockLevel() != null
+                                && item.getStockLevel() == 0
+                )
                 .count();
 
-        BigDecimal totalInventoryValue = inventoryItems.stream()
-                .filter(item -> item.getProduct() != null
-                        && item.getProduct().getPrice() != null
-                        && item.getStockLevel() != null)
-                .map(item -> BigDecimal.valueOf(item.getProduct().getPrice())
-                        .multiply(
-                                BigDecimal.valueOf(item.getStockLevel())))
-                .reduce(
-                        BigDecimal.ZERO,
-                        BigDecimal::add);
+        BigDecimal totalInventoryValue =
+                inventoryItems.stream()
+                        .filter(item ->
+                                item.getProduct() != null
+                                        && item.getProduct()
+                                        .getPrice() != null
+                                        && item.getStockLevel() != null
+                        )
+                        .map(item ->
+                                BigDecimal.valueOf(
+                                                item.getProduct()
+                                                        .getPrice()
+                                        )
+                                        .multiply(
+                                                BigDecimal.valueOf(
+                                                        item.getStockLevel()
+                                                )
+                                        )
+                        )
+                        .reduce(
+                                BigDecimal.ZERO,
+                                BigDecimal::add
+                        );
 
         int totalStockInQuantity = transactions.stream()
-                .filter(transaction -> transaction.getTransactionType() == TransactionType.STOCK_IN)
+                .filter(transaction ->
+                        transaction.getTransactionType()
+                                == TransactionType.STOCK_IN
+                )
                 .mapToInt(StockTransaction::getQuantity)
                 .sum();
 
         int totalStockOutQuantity = transactions.stream()
-                .filter(transaction -> transaction.getTransactionType() == TransactionType.STOCK_OUT)
+                .filter(transaction ->
+                        transaction.getTransactionType()
+                                == TransactionType.STOCK_OUT
+                )
                 .mapToInt(StockTransaction::getQuantity)
                 .sum();
 
         String riskyProducts = inventoryItems.stream()
-                .filter(item -> item.getProduct() != null
-                        && item.getStockLevel() != null
-                        && item.getMinimumStock() != null
-                        && item.getStockLevel() <= item.getMinimumStock())
+                .filter(item ->
+                        item.getProduct() != null
+                                && item.getStockLevel() != null
+                                && item.getMinimumStock() != null
+                                && item.getStockLevel()
+                                <= item.getMinimumStock()
+                )
                 .map(item -> String.format(
                         "- %s: current stock %d, minimum stock %d",
                         item.getProduct().getName(),
                         item.getStockLevel(),
-                        item.getMinimumStock()))
+                        item.getMinimumStock()
+                ))
                 .reduce(
                         "",
-                        (result, item) -> result + item + System.lineSeparator());
+                        (result, item) ->
+                                result
+                                        + item
+                                        + System.lineSeparator()
+                );
 
         String prompt = """
                 You are SmartStock AI, an inventory management analyst.
@@ -321,20 +397,18 @@ public class AiInsightService {
                 totalStockOutQuantity,
                 riskyProducts.isBlank()
                         ? "No products currently require attention."
-                        : riskyProducts);
+                        : riskyProducts
+        );
 
-        OllamaChatRequest request = new OllamaChatRequest(
-                model,
-                List.of(
-                        new OllamaChatRequest.Message(
-                                "system",
-                                "Provide concise and accurate inventory dashboard analysis."),
-                        new OllamaChatRequest.Message(
-                                "user",
-                                prompt)),
-                false);
+        HostedChatRequest request =
+                createHostedRequest(
+                        "Provide concise and accurate inventory "
+                                + "dashboard analysis.",
+                        prompt
+                );
 
-        String aiSummary = callOllama(request);
+        String aiSummary =
+                callHostedLlm(request);
 
         return new AiDashboardResponse(
                 totalProducts,
@@ -344,37 +418,126 @@ public class AiInsightService {
                 totalInventoryValue,
                 aiSummary,
                 model,
-                LocalDateTime.now());
+                LocalDateTime.now()
+        );
     }
 
-    private String callOllama(OllamaChatRequest request) {
+    private HostedChatRequest createHostedRequest(
+            String systemMessage,
+            String userPrompt
+    ) {
+        return new HostedChatRequest(
+                model,
+                List.of(
+                        new HostedChatRequest.Message(
+                                "system",
+                                systemMessage
+                        ),
+                        new HostedChatRequest.Message(
+                                "user",
+                                userPrompt
+                        )
+                ),
+                false,
+                0.2
+        );
+    }
 
+    private String callHostedLlm(
+            HostedChatRequest request
+    ) {
         try {
-            OllamaChatResponse response = ollamaRestClient.post()
-                    .uri("/api/chat")
-                    .body(request)
-                    .retrieve()
-                    .body(OllamaChatResponse.class);
+            HostedChatResponse response =
+                    hostedLlmRestClient
+                            .post()
+                            .uri("/chat/completions")
+                            .body(request)
+                            .retrieve()
+                            .body(
+                                    HostedChatResponse.class
+                            );
 
-            if (response == null
-                    || response.getMessage() == null
-                    || response.getMessage().getContent() == null
-                    || response.getMessage().getContent().isBlank()) {
-
+            if (
+                    response == null
+                            || response.getChoices() == null
+                            || response.getChoices().isEmpty()
+                            || response.getChoices()
+                            .get(0)
+                            .getMessage() == null
+                            || response.getChoices()
+                            .get(0)
+                            .getMessage()
+                            .getContent() == null
+                            || response.getChoices()
+                            .get(0)
+                            .getMessage()
+                            .getContent()
+                            .isBlank()
+            ) {
                 throw new AiServiceException(
-                        "AI service returned an empty response");
+                        "Hosted AI service returned "
+                                + "an empty response"
+                );
             }
 
-            return response.getMessage().getContent();
+            return response.getChoices()
+                    .get(0)
+                    .getMessage()
+                    .getContent()
+                    .trim();
+
+        } catch (
+                HttpClientErrorException.Unauthorized exception
+        ) {
+            throw new AiServiceException(
+                    "Groq authentication failed. "
+                            + "Check LLM_API_KEY.",
+                    exception
+            );
+
+        } catch (
+                HttpClientErrorException.TooManyRequests exception
+        ) {
+            throw new AiServiceException(
+                    "Groq rate limit reached. "
+                            + "Try again shortly.",
+                    exception
+            );
+
+        } catch (
+                HttpClientErrorException.BadRequest exception
+        ) {
+            throw new AiServiceException(
+                    "Groq rejected the request. "
+                            + "Check the configured model.",
+                    exception
+            );
+
+        } catch (
+                HttpClientErrorException exception
+        ) {
+            throw new AiServiceException(
+                    "Groq request failed with status "
+                            + exception.getStatusCode(),
+                    exception
+            );
+
+        } catch (
+                HttpServerErrorException exception
+        ) {
+            throw new AiServiceException(
+                    "Groq is temporarily unavailable.",
+                    exception
+            );
 
         } catch (AiServiceException exception) {
             throw exception;
 
         } catch (RestClientException exception) {
             throw new AiServiceException(
-                    "Unable to connect to the AI service. Ensure Ollama is running.",
-                    exception);
+                    "Unable to connect to Groq.",
+                    exception
+            );
         }
     }
-
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import com.smartstock.backend.security.JwtAuthenticationFilter;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,7 +35,12 @@ public class SecurityConfig {
                         UserDetailsService userDetailsService) {
                 this.jwtAuthenticationFilter = jwtAuthenticationFilter;
                 this.userDetailsService = userDetailsService;
+        
         }
+        @Value("${app.cors.allowed-origin}")
+                private String allowedOrigin;
+        
+                
 
         @Bean
         public AuthenticationProvider authenticationProvider(
@@ -108,7 +114,7 @@ public class SecurityConfig {
                 CorsConfiguration configuration = new CorsConfiguration();
 
                 configuration.setAllowedOrigins(
-                                List.of("http://localhost:4200"));
+                                List.of(allowedOrigin));
 
                 configuration.setAllowedMethods(
                                 List.of(

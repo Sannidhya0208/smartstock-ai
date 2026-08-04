@@ -1,0 +1,91 @@
+services:
+  database:
+    image: postgres:18
+    container_name: smartstock-database
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: smartstock
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - smartstock_postgres_data:/var/lib/postgresql
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DATABASE_USERNAME} -d smartstock"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    networks:
+      - smartstock-network
+
+
+  backend:
+    build:
+      context: ./backend/backend
+      dockerfile: Dockerfile
+
+    container_name: smartstock-backend
+    restart: unless-stopped
+
+    environment:
+      DATABASE_URL: jdbc:postgresql://database:5432/smartstock
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+
+      JWT_SECRET: ${JWT_SECRET}
+
+      FRONTEND_URL: http://localhost:4200
+
+      LLM_BASE_URL: https://api.groq.com/openai/v1
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-openai/gpt-oss-20b}
+
+      SHOW_SQL: "false"
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      database:
+        condition: service_healthy
+
+    networks:
+      - smartstock-network
+
+
+  frontend:
+    build:
+      context: ./frontend/smartstock-frontend
+      dockerfile: Dockerfile
+
+    container_name: smartstock-frontend
+    restart: unless-stopped
+
+    ports:
+      - "4200:80"
+
+    depends_on:
+      - backend
+
+    networks:
+      - smartstock-network
+
+
+volumes:
+  smartstock_postgres_data:
+
+
+networks:
+  smartstock-network:
+    driver: bridge
