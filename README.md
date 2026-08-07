@@ -53,4 +53,4 @@ Deployment
 
 ## Project Status
 
-🚧 Under Development
+Deployed
