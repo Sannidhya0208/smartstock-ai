@@ -3,6 +3,7 @@ package com.smartstock.backend.controller;
 import com.smartstock.backend.dto.StockTransactionResponse;
 import com.smartstock.backend.service.StockTransactionService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,7 +18,7 @@ public class StockTransactionController {
             StockTransactionService transactionService) {
         this.transactionService = transactionService;
     }
-
+    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
     @GetMapping
     public ResponseEntity<List<StockTransactionResponse>>
             getAllTransactions() {
@@ -26,7 +27,7 @@ public class StockTransactionController {
                 transactionService.getAllTransactions()
         );
     }
-
+    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
     @GetMapping("/product/{productId}")
     public ResponseEntity<List<StockTransactionResponse>>
             getProductTransactions(

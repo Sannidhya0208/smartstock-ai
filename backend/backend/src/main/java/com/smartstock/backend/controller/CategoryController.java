@@ -6,6 +6,7 @@ import com.smartstock.backend.service.CategoryService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,56 +15,48 @@ import java.util.List;
 @RequestMapping("/api/categories")
 public class CategoryController {
 
-    private final CategoryService categoryService;
+        private final CategoryService categoryService;
 
-    public CategoryController(
-            CategoryService categoryService
-    ) {
-        this.categoryService = categoryService;
-    }
+        public CategoryController(
+                        CategoryService categoryService) {
+                this.categoryService = categoryService;
+        }
 
-    @PostMapping
-    public ResponseEntity<CategoryResponse> createCategory(
-            @RequestBody CategoryRequest request
-    ) {
-        return new ResponseEntity<>(
-                categoryService.createCategory(request),
-                HttpStatus.CREATED
-        );
-    }
+        @PreAuthorize("hasAnyRole('OWNER','MANAGER')")
+        @PostMapping
+        public ResponseEntity<CategoryResponse> createCategory(
+                        @RequestBody CategoryRequest request) {
+                return new ResponseEntity<>(
+                                categoryService.createCategory(request),
+                                HttpStatus.CREATED);
+        }
+        @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
+        @GetMapping
+        public ResponseEntity<List<CategoryResponse>> getCategories() {
+                return ResponseEntity.ok(
+                                categoryService.getAllCategories());
+        }
+        @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
+        @GetMapping("/{id}")
+        public ResponseEntity<CategoryResponse> getCategoryById(
+                        @PathVariable Long id) {
+                return ResponseEntity.ok(
+                                categoryService.getCategoryById(id));
+        }
+        @PreAuthorize("hasAnyRole('OWNER','MANAGER')")
+        @PutMapping("/{id}")
+        public ResponseEntity<CategoryResponse> updateCategory(
+                        @PathVariable Long id,
+                        @RequestBody CategoryRequest request) {
+                return ResponseEntity.ok(
+                                categoryService.updateCategory(id, request));
+        }
+        @PreAuthorize("hasAnyRole('OWNER')")
+        @DeleteMapping("/{id}")
+        public ResponseEntity<Void> deleteCategory(
+                        @PathVariable Long id) {
+                categoryService.deleteCategory(id);
 
-    @GetMapping
-    public ResponseEntity<List<CategoryResponse>> getCategories() {
-        return ResponseEntity.ok(
-                categoryService.getAllCategories()
-        );
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<CategoryResponse> getCategoryById(
-            @PathVariable Long id
-    ) {
-        return ResponseEntity.ok(
-                categoryService.getCategoryById(id)
-        );
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<CategoryResponse> updateCategory(
-            @PathVariable Long id,
-            @RequestBody CategoryRequest request
-    ) {
-        return ResponseEntity.ok(
-                categoryService.updateCategory(id, request)
-        );
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategory(
-            @PathVariable Long id
-    ) {
-        categoryService.deleteCategory(id);
-
-        return ResponseEntity.noContent().build();
-    }
+                return ResponseEntity.noContent().build();
+        }
 }

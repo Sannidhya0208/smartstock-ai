@@ -7,6 +7,8 @@ import com.smartstock.backend.service.ProductService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.smartstock.backend.dto.ProductPageResponse;
 
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +35,7 @@ public class ProductController {
 
 
 
-
+    @PreAuthorize("hasAnyRole('OWNER','MANAGER')")
     @PostMapping
     public ResponseEntity<ProductResponse> createProduct(
             @RequestBody ProductRequest request
@@ -49,7 +51,7 @@ public class ProductController {
 
 
 
-
+    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
     @GetMapping
     public ResponseEntity<List<ProductResponse>> getAllProducts(){
 
@@ -62,7 +64,7 @@ public class ProductController {
 
 
 
-
+    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getProductById(
             @PathVariable Long id
@@ -77,7 +79,7 @@ public class ProductController {
 
 
 
-
+    @PreAuthorize("hasAnyRole('OWNER','MANAGER')")
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id,
@@ -93,7 +95,7 @@ public class ProductController {
 
 
 
-
+    @PreAuthorize("hasAnyRole('OWNER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteProduct(
             @PathVariable Long id

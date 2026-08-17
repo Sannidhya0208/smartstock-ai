@@ -1,0 +1,442 @@
+<div class="users-page">
+
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">
+        TEAM MANAGEMENT
+      </p>
+
+      <h1>Users</h1>
+
+      <p class="subtitle">
+        Manage staff access, roles and account status.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="primary-button"
+      (click)="openCreateForm()"
+    >
+      <i class="bi bi-person-plus"></i>
+      Add User
+    </button>
+  </header>
+
+  <div
+    *ngIf="successMessage"
+    class="alert success-alert"
+  >
+    {{ successMessage }}
+  </div>
+
+  <div
+    *ngIf="errorMessage"
+    class="alert error-alert"
+  >
+    {{ errorMessage }}
+  </div>
+
+  <section class="users-card">
+
+    <div
+      *ngIf="isLoading"
+      class="state-container"
+    >
+      <div class="spinner"></div>
+      <p>Loading users...</p>
+    </div>
+
+    <div
+      *ngIf="
+        !isLoading &&
+        users.length === 0
+      "
+      class="state-container"
+    >
+      <i class="bi bi-people empty-icon"></i>
+
+      <h3>No users found</h3>
+
+      <p>
+        Add your first manager or staff member.
+      </p>
+    </div>
+
+    <div
+      *ngIf="
+        !isLoading &&
+        users.length > 0
+      "
+      class="table-wrapper"
+    >
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Last Login</th>
+            <th class="actions-heading">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr
+            *ngFor="let user of users"
+          >
+
+            <td>
+              <div class="user-cell">
+
+                <div class="avatar">
+                  {{
+                    user.name
+                      .charAt(0)
+                      .toUpperCase()
+                  }}
+                </div>
+
+                <div>
+                  <strong>
+                    {{ user.name }}
+                  </strong>
+
+                  <span
+                    *ngIf="
+                      user.role === 'OWNER'
+                    "
+                    class="owner-label"
+                  >
+                    Owner
+                  </span>
+                </div>
+
+              </div>
+            </td>
+
+            <td>
+              {{ user.email }}
+            </td>
+
+            <td>
+
+              <span
+                *ngIf="
+                  user.role === 'OWNER'
+                "
+                class="role-badge owner-role"
+              >
+                OWNER
+              </span>
+
+              <select
+                *ngIf="
+                  user.role !== 'OWNER'
+                "
+                class="role-select"
+                [value]="user.role"
+                (change)="
+                  changeRole(
+                    user,
+                    $event
+                  )
+                "
+              >
+                <option
+                  value="MANAGER"
+                >
+                  Manager
+                </option>
+
+                <option
+                  value="STAFF"
+                >
+                  Staff
+                </option>
+              </select>
+
+            </td>
+
+            <td>
+
+              <span
+                class="status-badge"
+                [class.active-status]="
+                  user.active
+                "
+                [class.inactive-status]="
+                  !user.active
+                "
+              >
+                {{
+                  user.active
+                    ? 'Active'
+                    : 'Disabled'
+                }}
+              </span>
+
+            </td>
+
+            <td>
+              {{
+                formatLastLogin(
+                  user.lastLogin
+                )
+              }}
+            </td>
+
+            <td class="actions-cell">
+
+              <ng-container
+                *ngIf="
+                  user.role !== 'OWNER'
+                "
+              >
+
+                <button
+                  type="button"
+                  class="icon-button"
+                  [title]="
+                    user.active
+                      ? 'Disable user'
+                      : 'Enable user'
+                  "
+                  (click)="
+                    toggleStatus(user)
+                  "
+                >
+                  <i
+                    class="bi"
+                    [class.bi-person-x]="
+                      user.active
+                    "
+                    [class.bi-person-check]="
+                      !user.active
+                    "
+                  ></i>
+                </button>
+
+                <button
+                  type="button"
+                  class="
+                    icon-button
+                    delete-button
+                  "
+                  title="Delete user"
+                  (click)="
+                    deleteUser(user)
+                  "
+                >
+                  <i
+                    class="bi bi-trash"
+                  ></i>
+                </button>
+
+              </ng-container>
+
+              <span
+                *ngIf="
+                  user.role === 'OWNER'
+                "
+                class="protected-text"
+              >
+                Protected
+              </span>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+</div>
+
+
+<div
+  *ngIf="showCreateForm"
+  class="modal-backdrop"
+  (click)="closeCreateForm()"
+>
+
+  <section
+    class="modal-card"
+    (click)="
+      $event.stopPropagation()
+    "
+  >
+
+    <header class="modal-header">
+
+      <div>
+        <p class="eyebrow">
+          TEAM MEMBER
+        </p>
+
+        <h2>Add User</h2>
+      </div>
+
+      <button
+        type="button"
+        class="close-button"
+        (click)="closeCreateForm()"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
+
+    </header>
+
+    <form
+      [formGroup]="userForm"
+      (ngSubmit)="createUser()"
+    >
+
+      <div class="form-grid">
+
+        <div
+          class="
+            form-group
+            full-width
+          "
+        >
+
+          <label for="name">
+            Full name
+          </label>
+
+          <input
+            id="name"
+            type="text"
+            formControlName="name"
+            placeholder="Enter employee name"
+          />
+
+          <small
+            *ngIf="
+              userForm.controls['name'].touched &&
+              userForm.controls['name'].invalid
+            "
+          >
+            Enter a valid name.
+          </small>
+
+        </div>
+
+        <div
+          class="
+            form-group
+            full-width
+          "
+        >
+
+          <label for="email">
+            Email
+          </label>
+
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="employee@example.com"
+          />
+
+          <small
+            *ngIf="
+              userForm.controls['email'].touched &&
+              userForm.controls['email'].invalid
+            "
+          >
+            Enter a valid email address.
+          </small>
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="password">
+            Temporary password
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            placeholder="Minimum 8 characters"
+          />
+
+          <small
+            *ngIf="
+              userForm.controls['password'].touched &&
+              userForm.controls['password'].invalid
+            "
+          >
+            Password must contain at least
+            8 characters.
+          </small>
+
+        </div>
+
+        <div class="form-group">
+
+          <label for="role">
+            Role
+          </label>
+
+          <select
+            id="role"
+            formControlName="role"
+          >
+            <option value="STAFF">
+              Staff
+            </option>
+
+            <option value="MANAGER">
+              Manager
+            </option>
+          </select>
+
+        </div>
+
+      </div>
+
+      <footer class="modal-actions">
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="closeCreateForm()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="primary-button"
+          [disabled]="isSaving"
+        >
+          {{
+            isSaving
+              ? 'Creating...'
+              : 'Create User'
+          }}
+        </button>
+
+      </footer>
+
+    </form>
+
+  </section>
+
+</div>

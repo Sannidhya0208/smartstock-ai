@@ -3,6 +3,7 @@ package com.smartstock.backend.controller;
 import com.smartstock.backend.dto.AiInsightResponse;
 import com.smartstock.backend.service.AiInsightService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,14 +26,14 @@ public class AiInsightController {
 
         this.aiInsightService = aiInsightService;
     }
-
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @GetMapping("/insights")
     public ResponseEntity<AiInsightResponse> generateInventoryInsights() {
 
         return ResponseEntity.ok(
                 aiInsightService.generateInventoryInsights());
     }
-
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @PostMapping("/chat")
     public ResponseEntity<AiChatResponse> askInventoryQuestion(
             @Valid @RequestBody AiChatRequest request) {
@@ -42,7 +43,7 @@ public class AiInsightController {
 
         return ResponseEntity.ok(response);
     }
-
+    @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @GetMapping("/dashboard-summary")
     public ResponseEntity<AiDashboardResponse> getDashboardSummary() {
 

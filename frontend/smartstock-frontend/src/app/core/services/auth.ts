@@ -45,5 +45,25 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
+
+  }
+  getRole(): string | null {
+    const userJson = localStorage.getItem(this.userKey);
+
+    if (!userJson) {
+      return null;
+    }
+
+    try {
+      const user = JSON.parse(userJson);
+
+      return user.role ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  isOwner(): boolean {
+    return this.getRole() === 'OWNER';
   }
 }
