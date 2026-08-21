@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://smartstockai.store/api'
+  apiUrl: 'https://www.smartstockai.store/api'
 };
 
 // export const environment = {
