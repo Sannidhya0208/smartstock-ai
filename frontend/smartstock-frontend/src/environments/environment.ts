@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://smartstock-ai-3.onrender.com/api'
+  apiUrl: 'https://smartstockai.store/api'
 };
 
 // export const environment = {
