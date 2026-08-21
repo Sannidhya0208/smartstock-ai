@@ -5,18 +5,25 @@ import {
   inject,
   ChangeDetectorRef
 } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
+
 import {
-  Router,
-  RouterLink
+  Router
 } from '@angular/router';
 
 import {
   Category,
   CategoryRequest
 } from '../../core/models/category';
-import { CategoryService } from '../../core/services/category';
-import { AuthService } from '../../core/services/auth';
+
+import {
+  CategoryService
+} from '../../core/services/category';
+
+import {
+  AuthService
+} from '../../core/services/auth';
 
 @Component({
   selector: 'app-categories',
@@ -28,7 +35,6 @@ import { AuthService } from '../../core/services/auth';
   templateUrl: './categories.html',
   styleUrl: './categories.css'
 })
-
 export class Categories implements OnInit {
 
   private readonly categoryService =
@@ -44,117 +50,199 @@ export class Categories implements OnInit {
     inject(ChangeDetectorRef);
 
   categories: Category[] = [];
+
   filteredCategories: Category[] = [];
 
   searchTerm = '';
+
   categoryName = '';
 
   selectedCategoryId: number | null = null;
 
   isLoading = false;
+
   isSaving = false;
+
   showModal = false;
 
-
   errorMessage = '';
+
   successMessage = '';
 
   ngOnInit(): void {
     this.loadCategories();
   }
 
+  canCreateCategory(): boolean {
+    return this.authService.isOwner()
+      || this.authService.isManager();
+  }
+
+  canEditCategory(): boolean {
+    return this.authService.isOwner()
+      || this.authService.isManager();
+  }
+
+  canDeleteCategory(): boolean {
+    return this.authService.isOwner();
+  }
+
+  canManageCategories(): boolean {
+    return this.canEditCategory()
+      || this.canDeleteCategory();
+  }
 
   loadCategories(): void {
-    console.log('loadCategories called');
 
     this.isLoading = true;
+
     this.errorMessage = '';
 
-    this.categoryService.getCategories().subscribe({
-      next: categories => {
-        console.log('Categories received:', categories);
+    this.categoryService
+      .getCategories()
+      .subscribe({
 
-        this.categories = categories;
-        this.applySearch();
+        next: categories => {
 
-        this.isLoading = false;
-        this.changeDetectorRef.detectChanges();
-      },
+          this.categories = categories;
 
-      error: error => {
-        console.error('Category API error:', error);
+          this.applySearch();
 
-        this.isLoading = false;
+          this.isLoading = false;
 
-        if (
-          error.status === 401 ||
-          error.status === 403
-        ) {
-          this.errorMessage =
-            'Your session has expired. Please log in again.';
-        } else {
-          this.errorMessage =
-            error.error?.message ??
-            'Unable to load categories.';
+          this.changeDetectorRef
+            .detectChanges();
+        },
+
+        error: error => {
+
+          console.error(
+            'Category API error:',
+            error
+          );
+
+          this.isLoading = false;
+
+          if (
+            error.status === 401
+            || error.status === 403
+          ) {
+
+            this.errorMessage =
+              'Your session has expired or you do not have permission.';
+
+          } else {
+
+            this.errorMessage =
+              error.error?.message
+              ?? 'Unable to load categories.';
+          }
+
+          this.changeDetectorRef
+            .detectChanges();
         }
-
-        this.changeDetectorRef.detectChanges();
-      },
-
-      complete: () => {
-        console.log('Category request completed');
-      }
-    });
+      });
   }
+
   applySearch(): void {
+
     const search =
-      this.searchTerm.trim().toLowerCase();
+      this.searchTerm
+        .trim()
+        .toLowerCase();
 
     if (!search) {
+
       this.filteredCategories = [
         ...this.categories
       ];
+
       return;
     }
 
     this.filteredCategories =
-      this.categories.filter(category =>
-        category.name
-          .toLowerCase()
-          .includes(search)
+      this.categories.filter(
+        category =>
+          category.name
+            .toLowerCase()
+            .includes(search)
       );
   }
 
   openCreateModal(): void {
+
+    if (!this.canCreateCategory()) {
+      return;
+    }
+
     this.selectedCategoryId = null;
+
     this.categoryName = '';
+
     this.errorMessage = '';
+
     this.showModal = true;
   }
 
-  openEditModal(category: Category): void {
-    this.selectedCategoryId = category.id;
-    this.categoryName = category.name;
+  openEditModal(
+    category: Category
+  ): void {
+
+    if (!this.canEditCategory()) {
+      return;
+    }
+
+    this.selectedCategoryId =
+      category.id;
+
+    this.categoryName =
+      category.name;
+
     this.errorMessage = '';
+
     this.showModal = true;
   }
 
   closeModal(): void {
+
     if (this.isSaving) {
       return;
     }
 
     this.showModal = false;
+
     this.selectedCategoryId = null;
+
     this.categoryName = '';
   }
 
   saveCategory(): void {
-    const name = this.categoryName.trim();
+
+    const isCreating =
+      this.selectedCategoryId === null;
+
+    if (
+      isCreating
+      && !this.canCreateCategory()
+    ) {
+      return;
+    }
+
+    if (
+      !isCreating
+      && !this.canEditCategory()
+    ) {
+      return;
+    }
+
+    const name =
+      this.categoryName.trim();
 
     if (!name) {
+
       this.errorMessage =
         'Category name is required.';
+
       return;
     }
 
@@ -163,47 +251,74 @@ export class Categories implements OnInit {
     };
 
     this.isSaving = true;
+
     this.errorMessage = '';
 
+    this.successMessage = '';
+
     const categoryRequest =
-      this.selectedCategoryId === null
+      isCreating
+
         ? this.categoryService
-          .createCategory(request)
+            .createCategory(request)
+
         : this.categoryService
-          .updateCategory(
-            this.selectedCategoryId,
-            request
-          );
+            .updateCategory(
+              this.selectedCategoryId!,
+              request
+            );
 
     categoryRequest.subscribe({
+
       next: () => {
+
         this.successMessage =
-          this.selectedCategoryId === null
+          isCreating
             ? 'Category created successfully.'
             : 'Category updated successfully.';
 
         this.isSaving = false;
+
         this.closeModal();
+
         this.loadCategories();
 
         setTimeout(() => {
           this.successMessage = '';
         }, 3000);
       },
+
       error: error => {
-        console.error(error);
+
+        console.error(
+          'Failed to save category:',
+          error
+        );
+
         this.errorMessage =
-          error.error?.message ??
-          'Unable to save category.';
+          error.error?.message
+          ?? 'Unable to save category.';
+
         this.isSaving = false;
+
+        this.changeDetectorRef
+          .detectChanges();
       }
     });
   }
 
-  deleteCategory(category: Category): void {
-    const confirmed = window.confirm(
-      `Delete category "${category.name}"?`
-    );
+  deleteCategory(
+    category: Category
+  ): void {
+
+    if (!this.canDeleteCategory()) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Delete category "${category.name}"?`
+      );
 
     if (!confirmed) {
       return;
@@ -211,10 +326,14 @@ export class Categories implements OnInit {
 
     this.errorMessage = '';
 
+    this.successMessage = '';
+
     this.categoryService
       .deleteCategory(category.id)
       .subscribe({
+
         next: () => {
+
           this.successMessage =
             'Category deleted successfully.';
 
@@ -224,17 +343,30 @@ export class Categories implements OnInit {
             this.successMessage = '';
           }, 3000);
         },
+
         error: error => {
-          console.error(error);
+
+          console.error(
+            'Failed to delete category:',
+            error
+          );
+
           this.errorMessage =
-            error.error?.message ??
-            'Unable to delete category. It may be used by a product.';
+            error.error?.message
+            ?? 'Unable to delete category. It may be used by a product.';
+
+          this.changeDetectorRef
+            .detectChanges();
         }
       });
   }
 
   logout(): void {
+
     this.authService.logout();
-    this.router.navigate(['/login']);
+
+    this.router.navigate([
+      '/login'
+    ]);
   }
 }

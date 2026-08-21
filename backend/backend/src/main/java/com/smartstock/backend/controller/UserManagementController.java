@@ -18,71 +18,77 @@ import org.springframework.security.core.Authentication;
 @RequestMapping("/api/users")
 public class UserManagementController {
 
-    private final UserManagementService userManagementService;
+        private final UserManagementService userManagementService;
 
-    public UserManagementController(
-            UserManagementService userManagementService) {
-        this.userManagementService = userManagementService;
-    }
+        public UserManagementController(
+                        UserManagementService userManagementService) {
+                this.userManagementService = userManagementService;
+        }
 
-    @PreAuthorize("hasRole('OWNER')")
-    @PostMapping
-    public ResponseEntity<UserResponse> createUser(
-            @RequestBody UserCreateRequest request) {
-        return new ResponseEntity<>(
-                userManagementService.createUser(request),
-                HttpStatus.CREATED);
-    }
+        @PreAuthorize("hasRole('OWNER')")
+        @PostMapping
+        public ResponseEntity<UserResponse> createUser(
+                        @RequestBody UserCreateRequest request,
+                        Authentication authentication) {
 
-    @PreAuthorize("hasRole('OWNER')")
-    @GetMapping
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
+                return new ResponseEntity<>(
+                                userManagementService.createUser(
+                                                request,
+                                                authentication.getName()),
+                                HttpStatus.CREATED);
+        }
 
-        return ResponseEntity.ok(
-                userManagementService.getAllUsers());
-    }
+        @PreAuthorize("hasRole('OWNER')")
+        @GetMapping
+        public ResponseEntity<List<UserResponse>> getAllUsers(
+                        Authentication authentication) {
 
-    @PreAuthorize("hasRole('OWNER')")
-    @PatchMapping("/{id}/role")
-    public ResponseEntity<UserResponse> updateUserRole(
-            @PathVariable Long id,
-            @RequestBody RoleUpdateRequest request,
-            Authentication authentication) {
+                return ResponseEntity.ok(
+                                userManagementService.getAllUsers(
+                                                authentication.getName()));
+        }
 
-        UserResponse response = userManagementService.updateUserRole(
-                id,
-                request.getRole(),
-                authentication.getName());
+        @PreAuthorize("hasRole('OWNER')")
+        @PatchMapping("/{id}/role")
+        public ResponseEntity<UserResponse> updateUserRole(
+                        @PathVariable Long id,
+                        @RequestBody RoleUpdateRequest request,
+                        Authentication authentication) {
 
-        return ResponseEntity.ok(response);
-    }
+                UserResponse response = userManagementService.updateUserRole(
+                                id,
+                                request.getRole(),
+                                authentication.getName());
 
-    @PreAuthorize("hasRole('OWNER')")
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<UserResponse> updateUserStatus(
-            @PathVariable Long id,
-            @RequestBody UserStatusUpdateRequest request,
-            Authentication authentication) {
+                return ResponseEntity.ok(response);
+        }
 
-        UserResponse response = userManagementService.updateUserStatus(
-                id,
-                request.isActive(),
-                authentication.getName());
+        @PreAuthorize("hasRole('OWNER')")
+        @PatchMapping("/{id}/status")
+        public ResponseEntity<UserResponse> updateUserStatus(
+                        @PathVariable Long id,
+                        @RequestBody UserStatusUpdateRequest request,
+                        Authentication authentication) {
 
-        return ResponseEntity.ok(response);
-    }
+                UserResponse response = userManagementService.updateUserStatus(
+                                id,
+                                request.isActive(),
+                                authentication.getName());
 
-    @PreAuthorize("hasRole('OWNER')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteUser(
-            @PathVariable Long id,
-            Authentication authentication) {
+                return ResponseEntity.ok(response);
+        }
 
-        userManagementService.deleteUser(
-                id,
-                authentication.getName());
+        @PreAuthorize("hasRole('OWNER')")
+        @DeleteMapping("/{id}")
+        public ResponseEntity<String> deleteUser(
+                        @PathVariable Long id,
+                        Authentication authentication) {
 
-        return ResponseEntity.ok(
-                "User deleted successfully");
-    }
+                userManagementService.deleteUser(
+                                id,
+                                authentication.getName());
+
+                return ResponseEntity.ok(
+                                "User deleted successfully");
+        }
 }

@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
+import { AuthService } from './auth';
 import { environment } from '../../../environments/environment';
 import {
   Inventory,
@@ -15,6 +15,7 @@ import {
 })
 export class InventoryService {
   private readonly http = inject(HttpClient);
+  private readonly authService = inject(AuthService);
 
   private readonly apiUrl =
     `${environment.apiUrl}/inventory`;
@@ -73,5 +74,20 @@ export class InventoryService {
         responseType: 'text'
       }
     );
+  }
+
+  canAdjustStock(): boolean {
+    return this.authService.isOwner()
+      || this.authService.isManager()
+      || this.authService.isStaff();
+  }
+
+  canDeleteInventory(): boolean {
+    return this.authService.isOwner();
+  }
+
+  canManageInventory(): boolean {
+    return this.canAdjustStock()
+      || this.canDeleteInventory();
   }
 }

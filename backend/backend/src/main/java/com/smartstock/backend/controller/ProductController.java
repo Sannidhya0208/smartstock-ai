@@ -1,136 +1,202 @@
 package com.smartstock.backend.controller;
 
-
-import com.smartstock.backend.dto.ProductRequest;
-import com.smartstock.backend.dto.ProductResponse;
-import com.smartstock.backend.service.ProductService;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 
-import com.smartstock.backend.dto.ProductPageResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import com.smartstock.backend.dto.ProductPageResponse;
+import com.smartstock.backend.dto.ProductRequest;
+import com.smartstock.backend.dto.ProductResponse;
 
-
+import com.smartstock.backend.service.ProductService;
 
 @RestController
-@RequestMapping("api/products")
+@RequestMapping("/api/products")
 public class ProductController {
-
-
 
     private final ProductService productService;
 
-
-
-    public ProductController(ProductService productService){
-
-        this.productService = productService;
-
+    public ProductController(
+            ProductService productService
+    ) {
+        this.productService =
+                productService;
     }
 
-
-
-    @PreAuthorize("hasAnyRole('OWNER','MANAGER')")
+    @PreAuthorize(
+            "hasAnyRole('OWNER','MANAGER')"
+    )
     @PostMapping
-    public ResponseEntity<ProductResponse> createProduct(
-            @RequestBody ProductRequest request
-    ){
+    public ResponseEntity<ProductResponse>
+            createProduct(
+                    @RequestBody
+                    ProductRequest request,
+
+                    Authentication authentication
+            ) {
 
         return new ResponseEntity<>(
-                productService.createProduct(request),
+                productService
+                        .createProduct(
+                                request,
+                                authentication
+                                        .getName()
+                        ),
                 HttpStatus.CREATED
         );
-
     }
 
-
-
-
-    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
+    @PreAuthorize(
+            "hasAnyRole('OWNER','MANAGER','STAFF')"
+    )
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAllProducts(){
+    public ResponseEntity<List<ProductResponse>>
+            getAllProducts(
+                    Authentication authentication
+            ) {
 
         return ResponseEntity.ok(
-                productService.getAllProducts()
+                productService
+                        .getAllProducts(
+                                authentication
+                                        .getName()
+                        )
         );
-
     }
 
-
-
-
-    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
+    @PreAuthorize(
+            "hasAnyRole('OWNER','MANAGER','STAFF')"
+    )
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getProductById(
-            @PathVariable Long id
-    ){
+    public ResponseEntity<ProductResponse>
+            getProductById(
+                    @PathVariable
+                    Long id,
+
+                    Authentication authentication
+            ) {
 
         return ResponseEntity.ok(
-                productService.getProductById(id)
+                productService
+                        .getProductById(
+                                id,
+                                authentication
+                                        .getName()
+                        )
         );
-
     }
 
-
-
-
-    @PreAuthorize("hasAnyRole('OWNER','MANAGER')")
+    @PreAuthorize(
+            "hasAnyRole('OWNER','MANAGER')"
+    )
     @PutMapping("/{id}")
-    public ResponseEntity<ProductResponse> updateProduct(
-            @PathVariable Long id,
-            @RequestBody ProductRequest request
-    ){
+    public ResponseEntity<ProductResponse>
+            updateProduct(
+                    @PathVariable
+                    Long id,
+
+                    @RequestBody
+                    ProductRequest request,
+
+                    Authentication authentication
+            ) {
 
         return ResponseEntity.ok(
-                productService.updateProduct(id, request)
+                productService
+                        .updateProduct(
+                                id,
+                                request,
+                                authentication
+                                        .getName()
+                        )
         );
-
     }
 
-
-
-
-    @PreAuthorize("hasAnyRole('OWNER')")
+    @PreAuthorize(
+            "hasRole('OWNER')"
+    )
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteProduct(
-            @PathVariable Long id
-    ){
+    public ResponseEntity<String>
+            deleteProduct(
+                    @PathVariable
+                    Long id,
 
-        productService.deleteProduct(id);
+                    Authentication authentication
+            ) {
+
+        productService.deleteProduct(
+                id,
+                authentication.getName()
+        );
 
         return ResponseEntity.ok(
                 "Product deleted successfully"
         );
-
     }
 
-
+    @PreAuthorize(
+            "hasAnyRole('OWNER','MANAGER','STAFF')"
+    )
     @GetMapping("/page")
-        public ResponseEntity<ProductPageResponse> getProducts(
-                @RequestParam(defaultValue = "0") int page,
-                @RequestParam(defaultValue = "10") int size,
-                @RequestParam(defaultValue = "id") String sortBy,
-                @RequestParam(defaultValue = "asc") String sortDirection,
-                @RequestParam(required = false) String search,
-                @RequestParam(required = false) Long categoryId,
-                @RequestParam(required = false) Long supplierId) {
+    public ResponseEntity<ProductPageResponse>
+            getProducts(
+                    @RequestParam(
+                            defaultValue = "0"
+                    )
+                    int page,
+
+                    @RequestParam(
+                            defaultValue = "10"
+                    )
+                    int size,
+
+                    @RequestParam(
+                            defaultValue = "id"
+                    )
+                    String sortBy,
+
+                    @RequestParam(
+                            defaultValue = "asc"
+                    )
+                    String sortDirection,
+
+                    @RequestParam(
+                            required = false
+                    )
+                    String search,
+
+                    @RequestParam(
+                            required = false
+                    )
+                    Long categoryId,
+
+                    @RequestParam(
+                            required = false
+                    )
+                    Long supplierId,
+
+                    Authentication authentication
+            ) {
 
         return ResponseEntity.ok(
-                    productService.getProducts(
-                        page,
-                        size,
-                        sortBy,
-                        sortDirection,
-                        search,
-                        categoryId,
-                        supplierId
-                ));
-        }
-
-
+                productService
+                        .getProducts(
+                                page,
+                                size,
+                                sortBy,
+                                sortDirection,
+                                search,
+                                categoryId,
+                                supplierId,
+                                authentication
+                                        .getName()
+                        )
+        );
+    }
 }

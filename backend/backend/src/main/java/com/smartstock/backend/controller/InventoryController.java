@@ -1,18 +1,21 @@
 package com.smartstock.backend.controller;
 
-import com.smartstock.backend.dto.InventoryRequest;
-import com.smartstock.backend.dto.InventoryResponse;
-import com.smartstock.backend.service.InventoryService;
-
-import com.smartstock.backend.dto.StockRequest;
-import com.smartstock.backend.dto.StockResponse;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import com.smartstock.backend.dto.InventoryRequest;
+import com.smartstock.backend.dto.InventoryResponse;
+import com.smartstock.backend.dto.StockRequest;
+import com.smartstock.backend.dto.StockResponse;
+
+import com.smartstock.backend.service.InventoryService;
 
 @RestController
 @RequestMapping("/api/inventory")
@@ -20,57 +23,137 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
-    public InventoryController(InventoryService inventoryService) {
-        this.inventoryService = inventoryService;
+    public InventoryController(
+            InventoryService inventoryService
+    ) {
+        this.inventoryService =
+                inventoryService;
     }
-    @PreAuthorize("hasAnyRole('OWNER')")
+
+    @PreAuthorize(
+            "hasRole('OWNER')"
+    )
     @PostMapping
-    public ResponseEntity<InventoryResponse> createInventory(
-            @RequestBody InventoryRequest request) {
+    public ResponseEntity<InventoryResponse>
+            createInventory(
+                    @RequestBody
+                    InventoryRequest request,
+
+                    Authentication authentication
+            ) {
 
         return new ResponseEntity<>(
-                inventoryService.createInventory(request),
-                HttpStatus.CREATED);
+                inventoryService.createInventory(
+                        request,
+                        authentication.getName()
+                ),
+                HttpStatus.CREATED
+        );
     }
-    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
+
+    @PreAuthorize(
+            "hasAnyRole('OWNER','MANAGER','STAFF')"
+    )
     @GetMapping
-    public ResponseEntity<List<InventoryResponse>> getAllInventory() {
+    public ResponseEntity<List<InventoryResponse>>
+            getAllInventory(
+                    Authentication authentication
+            ) {
+
         return ResponseEntity.ok(
-                inventoryService.getAllInventory());
+                inventoryService.getAllInventory(
+                        authentication.getName()
+                )
+        );
     }
-    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
+
+    @PreAuthorize(
+            "hasAnyRole('OWNER','MANAGER','STAFF')"
+    )
     @GetMapping("/{id}")
-    public ResponseEntity<InventoryResponse> getInventoryById(
-            @PathVariable Long id) {
+    public ResponseEntity<InventoryResponse>
+            getInventoryById(
+                    @PathVariable
+                    Long id,
+
+                    Authentication authentication
+            ) {
 
         return ResponseEntity.ok(
-                inventoryService.getInventoryById(id));
+                inventoryService.getInventoryById(
+                        id,
+                        authentication.getName()
+                )
+        );
     }
-    @PreAuthorize("hasAnyRole('OWNER')")
+
+    @PreAuthorize(
+            "hasRole('OWNER')"
+    )
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteInventory(
-            @PathVariable Long id) {
+    public ResponseEntity<String>
+            deleteInventory(
+                    @PathVariable
+                    Long id,
 
-        inventoryService.deleteInventory(id);
+                    Authentication authentication
+            ) {
 
-        return ResponseEntity.ok("Inventory deleted successfully");
+        inventoryService.deleteInventory(
+                id,
+                authentication.getName()
+        );
+
+        return ResponseEntity.ok(
+                "Inventory deleted successfully"
+        );
     }
-    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
+
+    @PreAuthorize(
+            "hasAnyRole('OWNER','MANAGER','STAFF')"
+    )
     @PostMapping("/{id}/stock-in")
-        public ResponseEntity<StockResponse> stockIn(
-                @PathVariable Long id,
-                @RequestBody StockRequest request) {
+    public ResponseEntity<StockResponse>
+            stockIn(
+                    @PathVariable
+                    Long id,
 
-                return ResponseEntity.ok(
-                inventoryService.stockIn(id, request));
-        }
-    @PreAuthorize("hasAnyRole('OWNER','MANAGER','STAFF')")
+                    @RequestBody
+                    StockRequest request,
+
+                    Authentication authentication
+            ) {
+
+        return ResponseEntity.ok(
+                inventoryService.stockIn(
+                        id,
+                        request,
+                        authentication.getName()
+                )
+        );
+    }
+
+    @PreAuthorize(
+            "hasAnyRole('OWNER','MANAGER','STAFF')"
+    )
     @PostMapping("/{id}/stock-out")
-        public ResponseEntity<StockResponse> stockOut(
-                @PathVariable Long id,
-                @RequestBody StockRequest request) {
+    public ResponseEntity<StockResponse>
+            stockOut(
+                    @PathVariable
+                    Long id,
 
-                return ResponseEntity.ok(
-                inventoryService.stockOut(id, request));
+                    @RequestBody
+                    StockRequest request,
+
+                    Authentication authentication
+            ) {
+
+        return ResponseEntity.ok(
+                inventoryService.stockOut(
+                        id,
+                        request,
+                        authentication.getName()
+                )
+        );
     }
 }

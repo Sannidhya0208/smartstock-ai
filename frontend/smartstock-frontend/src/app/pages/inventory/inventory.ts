@@ -22,6 +22,10 @@ import {
   InventoryService
 } from '../../core/services/inventory';
 
+import {
+  AuthService
+} from '../../core/services/auth';
+
 @Component({
   selector: 'app-inventory',
   standalone: true,
@@ -33,8 +37,12 @@ import {
   styleUrl: './inventory.css'
 })
 export class InventoryPage implements OnInit {
+
   private readonly inventoryService =
     inject(InventoryService);
+
+  private readonly authService =
+    inject(AuthService);
 
   private readonly formBuilder =
     inject(FormBuilder);
@@ -43,111 +51,178 @@ export class InventoryPage implements OnInit {
     inject(ChangeDetectorRef);
 
   inventoryItems: Inventory[] = [];
+
   filteredInventory: Inventory[] = [];
 
   isLoading = true;
+
   isSaving = false;
 
   errorMessage = '';
+
   successMessage = '';
 
   searchValue = '';
+
   selectedStatus = 'ALL';
 
   showStockModal = false;
+
   selectedInventory: Inventory | null = null;
+
   stockAction: 'IN' | 'OUT' = 'IN';
 
-  stockForm = this.formBuilder.nonNullable.group({
-    quantity: [
-      1,
-      [
-        Validators.required,
-        Validators.min(1)
+  stockForm =
+    this.formBuilder.nonNullable.group({
+      quantity: [
+        1,
+        [
+          Validators.required,
+          Validators.min(1)
+        ]
       ]
-    ]
-  });
+    });
 
   ngOnInit(): void {
     this.loadInventory();
   }
 
+  canAdjustStock(): boolean {
+    return this.authService.isOwner()
+      || this.authService.isManager()
+      || this.authService.isStaff();
+  }
+
+  canDeleteInventory(): boolean {
+    return this.authService.isOwner();
+  }
+
+  canManageInventory(): boolean {
+    return this.canAdjustStock()
+      || this.canDeleteInventory();
+  }
+
   loadInventory(): void {
+
     this.isLoading = true;
+
     this.errorMessage = '';
 
     this.inventoryService
       .getInventory()
       .pipe(
         finalize(() => {
+
           this.isLoading = false;
-          this.changeDetector.detectChanges();
+
+          this.changeDetector
+            .detectChanges();
         })
       )
       .subscribe({
+
         next: inventory => {
-          this.inventoryItems = inventory;
+
+          this.inventoryItems =
+            inventory;
+
           this.applyFilters();
         },
 
         error: error => {
+
           console.error(
             'Failed to load inventory:',
             error
           );
 
-          this.errorMessage =
-            error.error?.message ??
-            'Unable to load inventory.';
+          if (
+            error.status === 401
+            || error.status === 403
+          ) {
+
+            this.errorMessage =
+              'Your session has expired or you do not have permission.';
+
+          } else {
+
+            this.errorMessage =
+              error.error?.message
+              ?? 'Unable to load inventory.';
+          }
         }
       });
   }
 
-  search(event: Event): void {
+  search(
+    event: Event
+  ): void {
+
     const input =
       event.target as HTMLInputElement;
 
-    this.searchValue = input.value;
+    this.searchValue =
+      input.value;
+
     this.applyFilters();
   }
 
-  setStatusFilter(status: string): void {
-    this.selectedStatus = status;
+  setStatusFilter(
+    status: string
+  ): void {
+
+    this.selectedStatus =
+      status;
+
     this.applyFilters();
   }
 
   applyFilters(): void {
+
     const search =
-      this.searchValue.trim().toLowerCase();
+      this.searchValue
+        .trim()
+        .toLowerCase();
 
     this.filteredInventory =
-      this.inventoryItems.filter(item => {
-        const matchesSearch =
-          !search ||
-          item.productName
-            .toLowerCase()
-            .includes(search);
+      this.inventoryItems.filter(
+        item => {
 
-        const status =
-          this.getStatus(item);
+          const matchesSearch =
+            !search
+            ||
+            item.productName
+              .toLowerCase()
+              .includes(search);
 
-        const matchesStatus =
-          this.selectedStatus === 'ALL' ||
-          this.selectedStatus === status;
+          const status =
+            this.getStatus(item);
 
-        return matchesSearch && matchesStatus;
-      });
+          const matchesStatus =
+            this.selectedStatus === 'ALL'
+            ||
+            this.selectedStatus === status;
+
+          return (
+            matchesSearch
+            &&
+            matchesStatus
+          );
+        }
+      );
   }
 
   getStatus(
     item: Inventory
   ): 'HEALTHY' | 'LOW' | 'OUT' {
+
     if (item.stockLevel === 0) {
       return 'OUT';
     }
 
     if (
-      item.stockLevel <= item.minimumStock
+      item.stockLevel
+      <= item.minimumStock
     ) {
       return 'LOW';
     }
@@ -155,8 +230,12 @@ export class InventoryPage implements OnInit {
     return 'HEALTHY';
   }
 
-  getStatusLabel(item: Inventory): string {
-    const status = this.getStatus(item);
+  getStatusLabel(
+    item: Inventory
+  ): string {
+
+    const status =
+      this.getStatus(item);
 
     if (status === 'OUT') {
       return 'Out of stock';
@@ -173,32 +252,56 @@ export class InventoryPage implements OnInit {
     item: Inventory,
     action: 'IN' | 'OUT'
   ): void {
-    this.selectedInventory = item;
-    this.stockAction = action;
+
+    if (!this.canAdjustStock()) {
+      return;
+    }
+
+    this.selectedInventory =
+      item;
+
+    this.stockAction =
+      action;
 
     this.stockForm.reset({
       quantity: 1
     });
 
     this.errorMessage = '';
+
+    this.successMessage = '';
+
     this.showStockModal = true;
   }
 
   closeStockModal(): void {
+
     if (this.isSaving) {
       return;
     }
 
     this.showStockModal = false;
+
     this.selectedInventory = null;
+
+    this.errorMessage = '';
   }
 
   submitStockChange(): void {
+
+    if (!this.canAdjustStock()) {
+      return;
+    }
+
     if (
-      this.stockForm.invalid ||
+      this.stockForm.invalid
+      ||
       !this.selectedInventory
     ) {
-      this.stockForm.markAllAsTouched();
+
+      this.stockForm
+        .markAllAsTouched();
+
       return;
     }
 
@@ -209,72 +312,105 @@ export class InventoryPage implements OnInit {
       );
 
     if (
-      this.stockAction === 'OUT' &&
-      quantity >
-        this.selectedInventory.stockLevel
+      this.stockAction === 'OUT'
+      &&
+      quantity
+        > this.selectedInventory
+            .stockLevel
     ) {
+
       this.errorMessage =
         'Stock-out quantity cannot exceed the current stock level.';
+
       return;
     }
 
     this.isSaving = true;
+
     this.errorMessage = '';
+
     this.successMessage = '';
 
     const operation =
       this.stockAction === 'IN'
-        ? this.inventoryService.stockIn(
-            this.selectedInventory.id,
-            quantity
-          )
-        : this.inventoryService.stockOut(
-            this.selectedInventory.id,
-            quantity
-          );
+
+        ? this.inventoryService
+            .stockIn(
+              this.selectedInventory.id,
+              quantity
+            )
+
+        : this.inventoryService
+            .stockOut(
+              this.selectedInventory.id,
+              quantity
+            );
 
     operation
       .pipe(
         finalize(() => {
+
           this.isSaving = false;
-          this.changeDetector.detectChanges();
+
+          this.changeDetector
+            .detectChanges();
         })
       )
       .subscribe({
+
         next: response => {
+
           this.successMessage =
             response.message;
 
           this.closeStockModal();
+
           this.loadInventory();
         },
 
         error: error => {
+
           console.error(
             'Stock operation failed:',
             error
           );
 
           this.errorMessage =
-            error.error?.message ??
-            'Unable to update stock.';
+            error.error?.message
+            ?? 'Unable to update stock.';
         }
       });
   }
 
-  deleteInventory(item: Inventory): void {
-    const confirmed = window.confirm(
-      `Delete inventory for "${item.productName}"?`
-    );
+  deleteInventory(
+    item: Inventory
+  ): void {
+
+    if (!this.canDeleteInventory()) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Delete inventory for "${item.productName}"?`
+      );
 
     if (!confirmed) {
       return;
     }
 
+    this.errorMessage = '';
+
+    this.successMessage = '';
+
     this.inventoryService
-      .deleteInventory(item.id)
+      .deleteInventory(
+        item.id
+      )
       .subscribe({
+
         next: () => {
+
           this.successMessage =
             'Inventory deleted successfully.';
 
@@ -282,14 +418,18 @@ export class InventoryPage implements OnInit {
         },
 
         error: error => {
+
           console.error(
             'Delete inventory failed:',
             error
           );
 
           this.errorMessage =
-            error.error?.message ??
-            'Unable to delete inventory.';
+            error.error?.message
+            ?? 'Unable to delete inventory.';
+
+          this.changeDetector
+            .detectChanges();
         }
       });
   }
@@ -299,21 +439,37 @@ export class InventoryPage implements OnInit {
   }
 
   get lowStockCount(): number {
-    return this.inventoryItems.filter(
-      item => this.getStatus(item) === 'LOW'
-    ).length;
+
+    return this.inventoryItems
+      .filter(
+        item =>
+          this.getStatus(item)
+          === 'LOW'
+      )
+      .length;
   }
 
   get outOfStockCount(): number {
-    return this.inventoryItems.filter(
-      item => this.getStatus(item) === 'OUT'
-    ).length;
+
+    return this.inventoryItems
+      .filter(
+        item =>
+          this.getStatus(item)
+          === 'OUT'
+      )
+      .length;
   }
 
   get healthyCount(): number {
-    return this.inventoryItems.filter(
-      item =>
-        this.getStatus(item) === 'HEALTHY'
-    ).length;
+
+    return this.inventoryItems
+      .filter(
+        item =>
+          this.getStatus(item)
+          === 'HEALTHY'
+      )
+      .length;
   }
+
+  
 }

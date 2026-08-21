@@ -9,6 +9,7 @@ public class DashboardResponse {
     private long totalSuppliers;
     private long totalInventoryItems;
     private long lowStockProducts;
+    private long outOfStockProducts;
     private BigDecimal totalInventoryValue;
 
     public DashboardResponse() {
@@ -52,6 +53,14 @@ public class DashboardResponse {
 
     public void setLowStockProducts(long lowStockProducts) {
         this.lowStockProducts = lowStockProducts;
+    }
+
+    public long getOutOfStockProducts() {
+        return outOfStockProducts;
+    }
+
+    public void setOutOfStockProducts(long outOfStockProducts) {
+        this.outOfStockProducts = outOfStockProducts;
     }
 
     public BigDecimal getTotalInventoryValue() {

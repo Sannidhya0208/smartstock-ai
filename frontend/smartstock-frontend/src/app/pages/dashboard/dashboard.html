@@ -63,7 +63,7 @@
 
           <div>
             <p>Low-stock items</p>
-            <h2>{{ dashboard.lowStockItems }}</h2>
+            <h2>{{ dashboard.lowStockProducts }}</h2>
           </div>
         </article>
 
@@ -74,7 +74,7 @@
 
           <div>
             <p>Out of stock</p>
-            <h2>{{ dashboard.outOfStockItems }}</h2>
+            <h2>{{ dashboard.outOfStockProducts }}</h2>
           </div>
         </article>
       </section>
@@ -121,24 +121,27 @@
             <strong>
               {{
               dashboard.totalInventoryItems -
-              dashboard.lowStockItems -
-              dashboard.outOfStockItems
+              dashboard.lowStockProducts -
+              dashboard.outOfStockProducts
               }}
             </strong>
           </div>
 
           <div class="health-row">
             <span>Needs attention</span>
-            <strong>{{ dashboard.lowStockItems }}</strong>
+            <strong>{{ dashboard.lowStockProducts }}</strong>
           </div>
 
           <div class="health-row">
             <span>Critical</span>
-            <strong>{{ dashboard.outOfStockItems }}</strong>
+            <strong>{{ dashboard.outOfStockProducts }}</strong>
           </div>
         </article>
       </section>
-
+<section
+  *ngIf="canUseAi()"
+  class="ai-summary-card"
+>
       <section class="ai-card">
         <div class="ai-heading">
           <div class="ai-icon">
@@ -152,7 +155,7 @@
         </div>
 
         <div class="ai-summary">
-          {{ dashboard.aiSummary }}
+          {{ aiDashboard?.aiSummary }}
         </div>
 
         <div class="generated-time">
@@ -165,6 +168,7 @@
           }}
         </div>
       </section>
+    </section>
     </ng-container>
   </main>
 </div>

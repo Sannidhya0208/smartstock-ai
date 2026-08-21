@@ -1,16 +1,21 @@
 <div class="categories-page">
 
-     
-
   <main class="main-content">
 
     <header class="topbar">
+
       <div>
-        <p class="page-label">Management</p>
-        <h1>Categories</h1>
+        <p class="page-label">
+          Management
+        </p>
+
+        <h1>
+          Categories
+        </h1>
       </div>
 
       <button
+        *ngIf="canCreateCategory()"
         type="button"
         class="primary-button"
         (click)="openCreateModal()"
@@ -18,7 +23,9 @@
         <i class="bi bi-plus-lg"></i>
         Add Category
       </button>
+
     </header>
+
 
     <div
       *ngIf="successMessage"
@@ -27,15 +34,22 @@
       {{ successMessage }}
     </div>
 
+
     <div
-      *ngIf="errorMessage && !showModal"
+      *ngIf="
+        errorMessage
+        && !showModal
+      "
       class="alert error-alert"
     >
       {{ errorMessage }}
     </div>
 
+
     <section class="toolbar">
+
       <div class="search-box">
+
         <i class="bi bi-search"></i>
 
         <input
@@ -44,8 +58,11 @@
           (input)="applySearch()"
           placeholder="Search categories"
         >
+
       </div>
+
     </section>
+
 
     <section class="table-card">
 
@@ -54,79 +71,149 @@
         class="loading-state"
       >
         <div class="spinner-border"></div>
-        <p>Loading categories...</p>
+
+        <p>
+          Loading categories...
+        </p>
       </div>
+
 
       <table
         *ngIf="!isLoading"
         class="categories-table"
       >
+
         <thead>
+
           <tr>
-            <th>ID</th>
-            <th>Category name</th>
-            <th class="actions-column">Actions</th>
+
+            <th>
+              ID
+            </th>
+
+            <th>
+              Category name
+            </th>
+
+            <th
+              *ngIf="canManageCategories()"
+              class="actions-column"
+            >
+              Actions
+            </th>
+
           </tr>
+
         </thead>
 
+
         <tbody>
+
           <tr
             *ngFor="
-              let category of filteredCategories
+              let category
+              of filteredCategories
             "
           >
-            <td>{{ category.id }}</td>
-            <td>{{ category.name }}</td>
 
-            <td class="actions">
+            <td>
+              {{ category.id }}
+            </td>
+
+            <td>
+              {{ category.name }}
+            </td>
+
+            <td
+              *ngIf="canManageCategories()"
+              class="actions"
+            >
+
               <button
+                *ngIf="canEditCategory()"
                 type="button"
-                class="icon-button edit-button"
+                class="
+                  icon-button
+                  edit-button
+                "
                 (click)="openEditModal(category)"
                 title="Edit category"
               >
                 <i class="bi bi-pencil"></i>
               </button>
 
+
               <button
+                *ngIf="canDeleteCategory()"
                 type="button"
-                class="icon-button delete-button"
+                class="
+                  icon-button
+                  delete-button
+                "
                 (click)="deleteCategory(category)"
                 title="Delete category"
               >
                 <i class="bi bi-trash"></i>
               </button>
+
             </td>
+
           </tr>
+
 
           <tr
             *ngIf="
               filteredCategories.length === 0
             "
           >
+
             <td
-              colspan="3"
+              [attr.colspan]="
+                canManageCategories()
+                  ? 3
+                  : 2
+              "
               class="empty-state"
             >
               No categories found.
             </td>
+
           </tr>
+
         </tbody>
+
       </table>
+
     </section>
+
   </main>
 
+
   <div
-    *ngIf="showModal"
+    *ngIf="
+      showModal
+      &&
+      (
+        canCreateCategory()
+        ||
+        canEditCategory()
+      )
+    "
     class="modal-backdrop"
     (click)="closeModal()"
   >
+
     <div
       class="modal-card"
-      (click)="$event.stopPropagation()"
+      (click)="
+        $event.stopPropagation()
+      "
     >
+
       <div class="modal-header">
+
         <div>
+
           <p class="page-label">
             {{
               selectedCategoryId === null
@@ -142,16 +229,21 @@
                 : 'Edit Category'
             }}
           </h2>
+
         </div>
+
 
         <button
           type="button"
           class="close-button"
+          [disabled]="isSaving"
           (click)="closeModal()"
         >
           <i class="bi bi-x-lg"></i>
         </button>
+
       </div>
+
 
       <div
         *ngIf="errorMessage"
@@ -160,11 +252,14 @@
         {{ errorMessage }}
       </div>
 
+
       <form
         (ngSubmit)="saveCategory()"
         #categoryForm="ngForm"
       >
+
         <div class="form-group">
+
           <label for="categoryName">
             Category name
           </label>
@@ -178,9 +273,12 @@
             maxlength="100"
             placeholder="Example: Electronics"
           >
+
         </div>
 
+
         <div class="modal-actions">
+
           <button
             type="button"
             class="secondary-button"
@@ -190,27 +288,40 @@
             Cancel
           </button>
 
+
           <button
             type="submit"
             class="primary-button"
             [disabled]="
-              categoryForm.invalid ||
-              isSaving
+              categoryForm.invalid
+              || isSaving
             "
           >
+
             <span
               *ngIf="isSaving"
-              class="spinner-border spinner-border-sm"
+              class="
+                spinner-border
+                spinner-border-sm
+              "
             ></span>
 
             {{
               isSaving
                 ? 'Saving...'
-                : 'Save Category'
+                : selectedCategoryId === null
+                  ? 'Create Category'
+                  : 'Update Category'
             }}
+
           </button>
+
         </div>
+
       </form>
+
     </div>
+
   </div>
+
 </div>

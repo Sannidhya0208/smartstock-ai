@@ -1,29 +1,31 @@
 package com.smartstock.backend.service;
 
-import com.smartstock.backend.dto.ProductRequest;
-import com.smartstock.backend.dto.ProductResponse;
-import com.smartstock.backend.model.Category;
-import com.smartstock.backend.model.Product;
-import com.smartstock.backend.model.Supplier;
-import com.smartstock.backend.repository.CategoryRepository;
-import com.smartstock.backend.repository.InventoryRepository;
-import com.smartstock.backend.repository.ProductRepository;
-import com.smartstock.backend.repository.SupplierRepository;
+import java.util.List;
 
-import com.smartstock.backend.dto.ProductPageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.smartstock.backend.model.Inventory;
-import com.smartstock.backend.repository.InventoryRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.smartstock.backend.dto.ProductPageResponse;
+import com.smartstock.backend.dto.ProductRequest;
+import com.smartstock.backend.dto.ProductResponse;
+
+import com.smartstock.backend.model.Category;
+import com.smartstock.backend.model.Company;
+import com.smartstock.backend.model.Inventory;
+import com.smartstock.backend.model.Product;
+import com.smartstock.backend.model.Supplier;
+import com.smartstock.backend.model.User;
+
+import com.smartstock.backend.repository.CategoryRepository;
+import com.smartstock.backend.repository.InventoryRepository;
+import com.smartstock.backend.repository.ProductRepository;
+import com.smartstock.backend.repository.SupplierRepository;
+import com.smartstock.backend.repository.UserRepository;
 
 @Service
 public class ProductService {
@@ -36,40 +38,95 @@ public class ProductService {
 
         private final InventoryRepository inventoryRepository;
 
+        private final UserRepository userRepository;
+
         public ProductService(
                         ProductRepository productRepository,
                         CategoryRepository categoryRepository,
                         SupplierRepository supplierRepository,
-                        InventoryRepository inventoryRepository) {
+                        InventoryRepository inventoryRepository,
+                        UserRepository userRepository) {
+
                 this.productRepository = productRepository;
+
                 this.categoryRepository = categoryRepository;
+
                 this.supplierRepository = supplierRepository;
+
                 this.inventoryRepository = inventoryRepository;
+
+                this.userRepository = userRepository;
+        }
+
+        private Company getCurrentCompany(
+                        String currentUserEmail) {
+
+                User user = userRepository
+                                .findByEmail(
+                                                currentUserEmail)
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Current user not found"));
+
+                if (user.getCompany() == null) {
+
+                        throw new IllegalStateException(
+                                        "Current user is not assigned to a company");
+                }
+
+                return user.getCompany();
         }
 
         @Transactional
-        public ProductResponse createProduct(ProductRequest request) {
+        public ProductResponse createProduct(
+                        ProductRequest request,
+                        String currentUserEmail) {
+
+                Company company = getCurrentCompany(
+                                currentUserEmail);
 
                 Category category = categoryRepository
-                                .findById(request.getCategoryId())
-                                .orElseThrow(() -> new RuntimeException("Category not found"));
+                                .findByIdAndCompanyId(
+                                                request.getCategoryId(),
+                                                company.getId())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Category not found"));
 
                 Supplier supplier = supplierRepository
-                                .findById(request.getSupplierId())
-                                .orElseThrow(() -> new RuntimeException("Supplier not found"));
+                                .findByIdAndCompanyId(
+                                                request.getSupplierId(),
+                                                company.getId())
+
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Supplier not found"));
 
                 Product product = new Product();
 
-                product.setName(request.getName());
-                product.setSku(request.getSku());
-                product.setPrice(request.getPrice());
-                product.setQuantity(request.getQuantity());
-                product.setCategory(category);
-                product.setSupplier(supplier);
+                product.setName(
+                                request.getName());
 
-                Product savedProduct = productRepository.save(product);
+                product.setSku(
+                                request.getSku());
 
-                if (Boolean.TRUE.equals(request.getAddToInventory())) {
+                product.setPrice(
+                                request.getPrice());
+
+                product.setQuantity(
+                                request.getQuantity());
+
+                product.setCategory(
+                                category);
+
+                product.setSupplier(
+                                supplier);
+
+                product.setCompany(
+                                company);
+
+                Product savedProduct = productRepository.save(
+                                product);
+
+                if (Boolean.TRUE.equals(
+                                request.getAddToInventory())) {
 
                         int stockLevel = request.getQuantity() != null
                                         ? request.getQuantity()
@@ -91,70 +148,113 @@ public class ProductService {
 
                         Inventory inventory = new Inventory();
 
-                        inventory.setProduct(savedProduct);
-                        inventory.setStockLevel(stockLevel);
-                        inventory.setMinimumStock(minimumStock);
+                        inventory.setProduct(
+                                        savedProduct);
 
-                        inventoryRepository.save(inventory);
+                        inventory.setStockLevel(
+                                        stockLevel);
+
+                        inventory.setMinimumStock(
+                                        minimumStock);
+
+                        inventoryRepository.save(
+                                        inventory);
                 }
-                return mapToResponse(savedProduct);
+
+                return mapToResponse(
+                                savedProduct);
         }
 
-        public List<ProductResponse> getAllProducts() {
+        public List<ProductResponse> getAllProducts(
+                        String currentUserEmail) {
 
-                return productRepository.findAll()
+                Company company = getCurrentCompany(
+                                currentUserEmail);
+
+                return productRepository
+                                .findAllByCompanyId(
+                                                company.getId())
                                 .stream()
-                                .map(this::mapToResponse)
-                                .collect(Collectors.toList());
-
+                                .map(
+                                                this::mapToResponse)
+                                .toList();
         }
 
-        public ProductResponse getProductById(Long id) {
+        public ProductResponse getProductById(
+                        Long id,
+                        String currentUserEmail) {
 
-                Product product = productRepository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Product not found"));
+                Company company = getCurrentCompany(
+                                currentUserEmail);
 
-                return mapToResponse(product);
+                Product product = productRepository
+                                .findByIdAndCompanyId(
+                                                id,
+                                                company.getId())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Product not found"));
 
+                return mapToResponse(
+                                product);
         }
 
         @Transactional
         public ProductResponse updateProduct(
                         Long id,
-                        ProductRequest request) {
+                        ProductRequest request,
+                        String currentUserEmail) {
 
-                Product product = productRepository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Product not found"));
+                Company company = getCurrentCompany(
+                                currentUserEmail);
 
-                product.setName(request.getName());
+                Product product = productRepository
+                                .findByIdAndCompanyId(
+                                                id,
+                                                company.getId())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Product not found"));
 
-                product.setSku(request.getSku());
+                product.setName(
+                                request.getName());
 
-                product.setPrice(request.getPrice());
+                product.setSku(
+                                request.getSku());
 
-                product.setQuantity(request.getQuantity());
+                product.setPrice(
+                                request.getPrice());
+
+                product.setQuantity(
+                                request.getQuantity());
 
                 if (request.getCategoryId() != null) {
 
-                        Category category = categoryRepository.findById(request.getCategoryId())
-                                        .orElseThrow(() -> new RuntimeException("Category not found"));
+                        Category category = categoryRepository
+                                        .findByIdAndCompanyId(
+                                                        request.getCategoryId(),
+                                                        company.getId())
+                                        .orElseThrow(() -> new RuntimeException(
+                                                        "Category not found"));
 
                         product.setCategory(category);
-
                 }
 
                 if (request.getSupplierId() != null) {
 
-                        Supplier supplier = supplierRepository.findById(request.getSupplierId())
-                                        .orElseThrow(() -> new RuntimeException("Supplier not found"));
+                        Supplier supplier = supplierRepository
+                                        .findByIdAndCompanyId(
+                                                        request.getSupplierId(),
+                                                        company.getId())
+                                        .orElseThrow(() -> new RuntimeException(
+                                                        "Supplier not found"));
 
                         product.setSupplier(supplier);
-
                 }
 
-                Product savedProduct = productRepository.save(product);
+                Product savedProduct = productRepository.save(
+                                product);
 
-                if (Boolean.TRUE.equals(request.getAddToInventory())) {
+                if (Boolean.TRUE.equals(
+                                request.getAddToInventory())) {
 
                         int stockLevel = request.getQuantity() != null
                                         ? request.getQuantity()
@@ -164,62 +264,58 @@ public class ProductService {
                                         ? request.getMinimumStock()
                                         : 10;
 
-                        if (stockLevel < 0 || minimumStock < 0) {
+                        if (stockLevel < 0
+                                        || minimumStock < 0) {
+
                                 throw new IllegalArgumentException(
                                                 "Stock values cannot be negative");
                         }
 
                         Inventory inventory = inventoryRepository
-                                        .findByProductId(savedProduct.getId())
+                                        .findByProductId(
+                                                        savedProduct
+                                                                        .getId())
                                         .orElseGet(() -> {
+
                                                 Inventory newInventory = new Inventory();
-                                                newInventory.setProduct(savedProduct);
+
+                                                newInventory.setProduct(
+                                                                savedProduct);
+
                                                 return newInventory;
                                         });
 
-                        inventory.setStockLevel(stockLevel);
-                        inventory.setMinimumStock(minimumStock);
+                        inventory.setStockLevel(
+                                        stockLevel);
 
-                        inventoryRepository.save(inventory);
+                        inventory.setMinimumStock(
+                                        minimumStock);
+
+                        inventoryRepository.save(
+                                        inventory);
                 }
 
-                return mapToResponse(savedProduct);
-
+                return mapToResponse(
+                                savedProduct);
         }
 
-        public void deleteProduct(Long id) {
+        @Transactional
+        public void deleteProduct(
+                        Long id,
+                        String currentUserEmail) {
 
-                productRepository.deleteById(id);
+                Company company = getCurrentCompany(
+                                currentUserEmail);
 
-        }
+                Product product = productRepository
+                                .findByIdAndCompanyId(
+                                                id,
+                                                company.getId())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Product not found"));
 
-        private ProductResponse mapToResponse(Product product) {
-
-                ProductResponse response = new ProductResponse();
-
-                response.setId(product.getId());
-                response.setName(product.getName());
-                response.setSku(product.getSku());
-                response.setPrice(product.getPrice());
-                response.setQuantity(product.getQuantity());
-
-                if (product.getCategory() != null) {
-                        response.setCategoryId(
-                                        product.getCategory().getId());
-
-                        response.setCategory(
-                                        product.getCategory().getName());
-                }
-
-                if (product.getSupplier() != null) {
-                        response.setSupplierId(
-                                        product.getSupplier().getId());
-
-                        response.setSupplier(
-                                        product.getSupplier().getName());
-                }
-
-                return response;
+                productRepository.delete(
+                                product);
         }
 
         public ProductPageResponse getProducts(
@@ -229,34 +325,65 @@ public class ProductService {
                         String sortDirection,
                         String search,
                         Long categoryId,
-                        Long supplierId) {
+                        Long supplierId,
+                        String currentUserEmail) {
 
-                Sort sort = sortDirection.equalsIgnoreCase("desc")
-                                ? Sort.by(sortBy).descending()
-                                : Sort.by(sortBy).ascending();
+                Company company = getCurrentCompany(
+                                currentUserEmail);
 
-                Pageable pageable = PageRequest.of(page, size, sort);
+                Sort sort = sortDirection
+                                .equalsIgnoreCase(
+                                                "desc")
+                                                                ? Sort.by(
+                                                                                sortBy).descending()
+                                                                : Sort.by(
+                                                                                sortBy).ascending();
+
+                Pageable pageable = PageRequest.of(
+                                page,
+                                size,
+                                sort);
 
                 Page<Product> productPage;
 
-                if (search != null && !search.isBlank()) {
+                if (search != null
+                                && !search.isBlank()) {
+
                         productPage = productRepository
-                                        .findByNameContainingIgnoreCaseOrSkuContainingIgnoreCase(
-                                                        search,
+                                        .searchByCompany(
+                                                        company.getId(),
                                                         search,
                                                         pageable);
+
                 } else if (categoryId != null) {
-                        productPage = productRepository.findByCategoryId(categoryId, pageable);
+
+                        productPage = productRepository
+                                        .findByCompanyIdAndCategoryId(
+                                                        company.getId(),
+                                                        categoryId,
+                                                        pageable);
+
                 } else if (supplierId != null) {
-                        productPage = productRepository.findBySupplierId(supplierId, pageable);
+
+                        productPage = productRepository
+                                        .findByCompanyIdAndSupplierId(
+                                                        company.getId(),
+                                                        supplierId,
+                                                        pageable);
+
                 } else {
-                        productPage = productRepository.findAll(pageable);
+
+                        productPage = productRepository
+                                        .findAllByCompanyId(
+                                                        company.getId(),
+                                                        pageable);
                 }
 
                 List<ProductResponse> products = productPage
                                 .getContent()
                                 .stream()
-                                .map(this::mapToResponse)
+                                .map(
+                                                this::mapToResponse)
                                 .toList();
 
                 return new ProductPageResponse(
@@ -268,4 +395,52 @@ public class ProductService {
                                 productPage.isLast());
         }
 
+        private ProductResponse mapToResponse(
+                        Product product) {
+
+                ProductResponse response = new ProductResponse();
+
+                response.setId(
+                                product.getId());
+
+                response.setName(
+                                product.getName());
+
+                response.setSku(
+                                product.getSku());
+
+                response.setPrice(
+                                product.getPrice());
+
+                response.setQuantity(
+                                product.getQuantity());
+
+                if (product.getCategory() != null) {
+
+                        response.setCategoryId(
+                                        product
+                                                        .getCategory()
+                                                        .getId());
+
+                        response.setCategory(
+                                        product
+                                                        .getCategory()
+                                                        .getName());
+                }
+
+                if (product.getSupplier() != null) {
+
+                        response.setSupplierId(
+                                        product
+                                                        .getSupplier()
+                                                        .getId());
+
+                        response.setSupplier(
+                                        product
+                                                        .getSupplier()
+                                                        .getName());
+                }
+
+                return response;
+        }
 }

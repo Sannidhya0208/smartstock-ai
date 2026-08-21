@@ -1,15 +1,25 @@
 <div class="suppliers-page">
 
   <header class="page-header">
+
     <div>
-      <p class="page-label">Management</p>
-      <h1>Suppliers</h1>
+
+      <p class="page-label">
+        Management
+      </p>
+
+      <h1>
+        Suppliers
+      </h1>
+
       <p class="page-description">
         Manage supplier contact information and product sources.
       </p>
+
     </div>
 
     <button
+      *ngIf="canCreateSupplier()"
       type="button"
       class="primary-button"
       (click)="openCreateModal()"
@@ -17,7 +27,9 @@
       <i class="bi bi-plus-lg"></i>
       Add Supplier
     </button>
+
   </header>
+
 
   <div
     *ngIf="successMessage"
@@ -26,15 +38,22 @@
     {{ successMessage }}
   </div>
 
+
   <div
-    *ngIf="errorMessage && !showModal"
+    *ngIf="
+      errorMessage
+      && !showModal
+    "
     class="alert error-alert"
   >
     {{ errorMessage }}
   </div>
 
+
   <section class="toolbar">
+
     <div class="search-box">
+
       <i class="bi bi-search"></i>
 
       <input
@@ -43,17 +62,24 @@
         (input)="applySearch()"
         placeholder="Search by name, email or phone"
       >
+
     </div>
 
+
     <div class="supplier-count">
+
       {{ filteredSuppliers.length }}
+
       supplier{{
         filteredSuppliers.length === 1
           ? ''
           : 's'
       }}
+
     </div>
+
   </section>
+
 
   <section class="table-card">
 
@@ -61,37 +87,73 @@
       *ngIf="isLoading"
       class="loading-state"
     >
+
       <div class="spinner-border"></div>
-      <p>Loading suppliers...</p>
+
+      <p>
+        Loading suppliers...
+      </p>
+
     </div>
+
 
     <div
       *ngIf="!isLoading"
       class="table-wrapper"
     >
+
       <table class="suppliers-table">
+
         <thead>
+
           <tr>
-            <th>ID</th>
-            <th>Supplier</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th class="actions-column">
+
+            <th>
+              ID
+            </th>
+
+            <th>
+              Supplier
+            </th>
+
+            <th>
+              Email
+            </th>
+
+            <th>
+              Phone
+            </th>
+
+            <th
+              *ngIf="canManageSuppliers()"
+              class="actions-column"
+            >
               Actions
             </th>
+
           </tr>
+
         </thead>
 
+
         <tbody>
+
           <tr
             *ngFor="
-              let supplier of filteredSuppliers
+              let supplier
+              of filteredSuppliers
             "
           >
-            <td>{{ supplier.id }}</td>
 
             <td>
+              {{ supplier.id }}
+            </td>
+
+
+            <td>
+
               <div class="supplier-name-cell">
+
                 <div class="supplier-avatar">
                   {{
                     supplier.name
@@ -103,76 +165,144 @@
                 <strong>
                   {{ supplier.name }}
                 </strong>
+
               </div>
+
             </td>
 
+
             <td>
+
               <a
                 class="contact-link"
-                [href]="'mailto:' + supplier.email"
+                [href]="
+                  'mailto:'
+                  + supplier.email
+                "
               >
                 {{ supplier.email }}
               </a>
+
             </td>
 
+
             <td>
+
               <a
                 class="contact-link"
-                [href]="'tel:' + supplier.phone"
+                [href]="
+                  'tel:'
+                  + supplier.phone
+                "
               >
                 {{ supplier.phone }}
               </a>
+
             </td>
 
-            <td class="actions">
+
+            <td
+              *ngIf="canManageSuppliers()"
+              class="actions"
+            >
+
               <button
+                *ngIf="canEditSupplier()"
                 type="button"
-                class="icon-button edit-button"
+                class="
+                  icon-button
+                  edit-button
+                "
                 title="Edit supplier"
-                (click)="openEditModal(supplier)"
+                (click)="
+                  openEditModal(
+                    supplier
+                  )
+                "
               >
+
                 <i class="bi bi-pencil"></i>
+
               </button>
 
+
               <button
+                *ngIf="canDeleteSupplier()"
                 type="button"
-                class="icon-button delete-button"
+                class="
+                  icon-button
+                  delete-button
+                "
                 title="Delete supplier"
-                (click)="deleteSupplier(supplier)"
+                (click)="
+                  deleteSupplier(
+                    supplier
+                  )
+                "
               >
+
                 <i class="bi bi-trash"></i>
+
               </button>
+
             </td>
+
           </tr>
+
 
           <tr
             *ngIf="
               filteredSuppliers.length === 0
             "
           >
+
             <td
-              colspan="5"
+              [attr.colspan]="
+                canManageSuppliers()
+                  ? 5
+                  : 4
+              "
               class="empty-state"
             >
               No suppliers found.
             </td>
+
           </tr>
+
         </tbody>
+
       </table>
+
     </div>
+
   </section>
 
+
   <div
-    *ngIf="showModal"
+    *ngIf="
+      showModal
+      &&
+      (
+        canCreateSupplier()
+        ||
+        canEditSupplier()
+      )
+    "
     class="modal-backdrop"
     (click)="closeModal()"
   >
+
     <div
       class="modal-card"
-      (click)="$event.stopPropagation()"
+      (click)="
+        $event.stopPropagation()
+      "
     >
+
       <div class="modal-header">
+
         <div>
+
           <p class="page-label">
             {{
               selectedSupplierId === null
@@ -188,16 +318,23 @@
                 : 'Edit Supplier'
             }}
           </h2>
+
         </div>
+
 
         <button
           type="button"
           class="close-button"
+          [disabled]="isSaving"
           (click)="closeModal()"
         >
+
           <i class="bi bi-x-lg"></i>
+
         </button>
+
       </div>
+
 
       <div
         *ngIf="errorMessage"
@@ -206,11 +343,14 @@
         {{ errorMessage }}
       </div>
 
+
       <form
         #supplierForm="ngForm"
         (ngSubmit)="saveSupplier()"
       >
+
         <div class="form-group">
+
           <label for="supplierName">
             Supplier name
           </label>
@@ -224,9 +364,12 @@
             maxlength="120"
             placeholder="Example: Dell Distributors"
           >
+
         </div>
 
+
         <div class="form-group">
+
           <label for="supplierEmail">
             Email address
           </label>
@@ -241,9 +384,12 @@
             maxlength="150"
             placeholder="supplier@example.com"
           >
+
         </div>
 
+
         <div class="form-group">
+
           <label for="supplierPhone">
             Phone number
           </label>
@@ -257,9 +403,12 @@
             maxlength="20"
             placeholder="+91 98765 43210"
           >
+
         </div>
 
+
         <div class="modal-actions">
+
           <button
             type="button"
             class="secondary-button"
@@ -269,14 +418,16 @@
             Cancel
           </button>
 
+
           <button
             type="submit"
             class="primary-button"
             [disabled]="
-              supplierForm.invalid ||
-              isSaving
+              supplierForm.invalid
+              || isSaving
             "
           >
+
             <span
               *ngIf="isSaving"
               class="
@@ -288,11 +439,19 @@
             {{
               isSaving
                 ? 'Saving...'
-                : 'Save Supplier'
+                : selectedSupplierId === null
+                  ? 'Create Supplier'
+                  : 'Update Supplier'
             }}
+
           </button>
+
         </div>
+
       </form>
+
     </div>
+
   </div>
+
 </div>

@@ -1,42 +1,44 @@
 package com.smartstock.backend.model;
 
-
 import jakarta.persistence.*;
-
 
 @Entity
 public class Category {
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     private String name;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
-    public Category(){
+    public Category() {
     }
 
-
-    public Long getId(){
+    public Long getId() {
         return id;
     }
 
-
-    public void setId(Long id){
-        this.id=id;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-
-    public String getName(){
+    public String getName() {
         return name;
     }
 
-
-    public void setName(String name){
-        this.name=name;
+    public void setName(String name) {
+        this.name = name;
     }
 
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
+    }
 }

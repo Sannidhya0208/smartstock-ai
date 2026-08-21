@@ -25,6 +25,10 @@ public class User {
     private boolean active = true;
     private LocalDateTime lastLogin;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
+
     public User() {
     }
 
@@ -82,5 +86,13 @@ public class User {
 
     public void setLastLogin(LocalDateTime lastLogin) {
         this.lastLogin = lastLogin;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 }

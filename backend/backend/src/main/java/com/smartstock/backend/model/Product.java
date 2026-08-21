@@ -1,38 +1,31 @@
 package com.smartstock.backend.model;
 
-
 import jakarta.persistence.*;
-
 
 @Entity
 public class Product {
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     private String name;
-
 
     private String sku;
 
-
     private Double price;
 
-
     private Integer quantity;
-
-
 
     @ManyToOne
     private Category category;
 
-
-
     @ManyToOne
     private Supplier supplier;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
     private Boolean addToInventory;
 
@@ -40,79 +33,71 @@ public class Product {
 
     private Integer minimumStock;
 
-
-
-    public Product(){
+    public Product() {
     }
 
-
-    public Long getId(){
+    public Long getId() {
         return id;
     }
 
-
-    public void setId(Long id){
-        this.id=id;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-
-    public String getName(){
+    public String getName() {
         return name;
     }
 
-
-    public void setName(String name){
-        this.name=name;
+    public void setName(String name) {
+        this.name = name;
     }
 
-
-    public String getSku(){
+    public String getSku() {
         return sku;
     }
 
-
-    public void setSku(String sku){
-        this.sku=sku;
+    public void setSku(String sku) {
+        this.sku = sku;
     }
 
-
-    public Double getPrice(){
+    public Double getPrice() {
         return price;
     }
 
-
-    public void setPrice(Double price){
-        this.price=price;
+    public void setPrice(Double price) {
+        this.price = price;
     }
 
-
-    public Integer getQuantity(){
+    public Integer getQuantity() {
         return quantity;
     }
 
-
-    public void setQuantity(Integer quantity){
-        this.quantity=quantity;
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
     }
 
-
-    public Category getCategory(){
+    public Category getCategory() {
         return category;
     }
 
-
-    public void setCategory(Category category){
-        this.category=category;
+    public void setCategory(Category category) {
+        this.category = category;
     }
 
-
-    public Supplier getSupplier(){
+    public Supplier getSupplier() {
         return supplier;
     }
 
+    public void setSupplier(Supplier supplier) {
+        this.supplier = supplier;
+    }
 
-    public void setSupplier(Supplier supplier){
-        this.supplier=supplier;
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 
     public Boolean getaddToInventory() {
@@ -138,5 +123,4 @@ public class Product {
     public void setMinimumStock(Integer minimumStock) {
         this.minimumStock = minimumStock;
     }
-
 }

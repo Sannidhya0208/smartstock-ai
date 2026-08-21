@@ -23,13 +23,18 @@ export class AuthService {
   }
 
   saveSession(response: AuthResponse): void {
-    localStorage.setItem(this.tokenKey, response.token);
+    localStorage.setItem(
+      this.tokenKey,
+      response.token
+    );
 
     localStorage.setItem(
       this.userKey,
       JSON.stringify({
         email: response.email,
-        role: response.role
+        role: response.role,
+        companyId: response.companyId,
+        companyName: response.companyName
       })
     );
   }
@@ -47,23 +52,48 @@ export class AuthService {
     localStorage.removeItem(this.userKey);
 
   }
-  getRole(): string | null {
-    const userJson = localStorage.getItem(this.userKey);
+  getCurrentUser(): {
+    email: string;
+    role: string;
+    companyId: number;
+    companyName: string;
+  } | null {
 
-    if (!userJson) {
+    const user = localStorage.getItem(this.userKey);
+
+    if (!user) {
       return null;
     }
 
     try {
-      const user = JSON.parse(userJson);
-
-      return user.role ?? null;
+      return JSON.parse(user);
     } catch {
       return null;
     }
   }
 
+  getRole(): string | null {
+    return this.getCurrentUser()?.role ?? null;
+  }
+
   isOwner(): boolean {
     return this.getRole() === 'OWNER';
   }
+
+  isManager(): boolean {
+    return this.getRole() === 'MANAGER';
+  }
+
+  isStaff(): boolean {
+    return this.getRole() === 'STAFF';
+  }
+
+  getCompanyId(): number | null {
+    return this.getCurrentUser()?.companyId ?? null;
+  }
+
+  getCompanyName(): string | null {
+    return this.getCurrentUser()?.companyName ?? null;
+  }
+
 }

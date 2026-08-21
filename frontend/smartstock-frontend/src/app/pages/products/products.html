@@ -1,20 +1,27 @@
 <div class="products-page">
 
   <main class="main-content">
+
     <header class="page-header">
+
       <div>
+
         <p class="eyebrow">
           INVENTORY MANAGEMENT
         </p>
 
-        <h1>Products</h1>
+        <h1>
+          Products
+        </h1>
 
         <p class="subtitle">
           Manage products, pricing, stock and suppliers.
         </p>
+
       </div>
 
       <button
+        *ngIf="canCreateProduct()"
         class="primary-button"
         type="button"
         (click)="openCreateForm()"
@@ -22,7 +29,9 @@
         <i class="bi bi-plus-lg"></i>
         Add Product
       </button>
+
     </header>
+
 
     <div
       *ngIf="successMessage"
@@ -31,16 +40,24 @@
       {{ successMessage }}
     </div>
 
+
     <div
-      *ngIf="errorMessage && !showForm"
+      *ngIf="
+        errorMessage &&
+        !showForm
+      "
       class="alert error-alert"
     >
       {{ errorMessage }}
     </div>
 
+
     <section class="products-card">
+
       <div class="toolbar">
+
         <div class="search-wrapper">
+
           <i class="bi bi-search"></i>
 
           <input
@@ -58,21 +75,34 @@
           >
             <i class="bi bi-x-lg"></i>
           </button>
+
         </div>
 
         <span class="result-count">
           {{ totalElements }}
-          {{ totalElements === 1 ? 'product' : 'products' }}
+          {{
+            totalElements === 1
+              ? 'product'
+              : 'products'
+          }}
         </span>
+
       </div>
+
 
       <div
         *ngIf="isLoading"
         class="state-container"
       >
+
         <div class="spinner"></div>
-        <p>Loading products...</p>
+
+        <p>
+          Loading products...
+        </p>
+
       </div>
+
 
       <div
         *ngIf="
@@ -81,18 +111,31 @@
         "
         class="state-container"
       >
-        <i class="bi bi-box-seam empty-icon"></i>
 
-        <h3>No products found</h3>
+        <i
+          class="
+            bi
+            bi-box-seam
+            empty-icon
+          "
+        ></i>
+
+        <h3>
+          No products found
+        </h3>
 
         <p>
           {{
             searchValue
               ? 'Try using a different search term.'
-              : 'Add your first product to get started.'
+              : canCreateProduct()
+                ? 'Add your first product to get started.'
+                : 'No products are currently available.'
           }}
         </p>
+
       </div>
+
 
       <div
         *ngIf="
@@ -101,63 +144,124 @@
         "
         class="table-wrapper"
       >
+
         <table>
+
           <thead>
+
             <tr>
+
               <th>
+
                 <button
                   type="button"
                   (click)="sort('name')"
                 >
                   Product
-                  <i class="bi bi-arrow-down-up"></i>
+
+                  <i
+                    class="
+                      bi
+                      bi-arrow-down-up
+                    "
+                  ></i>
                 </button>
+
               </th>
 
+
               <th>
+
                 <button
                   type="button"
                   (click)="sort('sku')"
                 >
                   SKU
-                  <i class="bi bi-arrow-down-up"></i>
+
+                  <i
+                    class="
+                      bi
+                      bi-arrow-down-up
+                    "
+                  ></i>
                 </button>
+
               </th>
 
-              <th>Category</th>
 
               <th>
+                Category
+              </th>
+
+
+              <th>
+
                 <button
                   type="button"
                   (click)="sort('price')"
                 >
                   Price
-                  <i class="bi bi-arrow-down-up"></i>
+
+                  <i
+                    class="
+                      bi
+                      bi-arrow-down-up
+                    "
+                  ></i>
                 </button>
+
               </th>
 
+
               <th>
+
                 <button
                   type="button"
                   (click)="sort('quantity')"
                 >
                   Quantity
-                  <i class="bi bi-arrow-down-up"></i>
+
+                  <i
+                    class="
+                      bi
+                      bi-arrow-down-up
+                    "
+                  ></i>
                 </button>
+
               </th>
 
-              <th>Supplier</th>
 
-              <th class="actions-heading">
+              <th>
+                Supplier
+              </th>
+
+
+              <th
+                *ngIf="canManageProducts()"
+                class="actions-heading"
+              >
                 Actions
               </th>
+
             </tr>
+
           </thead>
 
+
           <tbody>
-            <tr *ngFor="let product of products">
+
+            <tr
+              *ngFor="
+                let product
+                of products
+              "
+            >
+
               <td>
+
                 <div class="product-name">
+
                   <div class="product-avatar">
                     {{
                       product.name
@@ -169,21 +273,28 @@
                   <strong>
                     {{ product.name }}
                   </strong>
+
                 </div>
+
               </td>
 
+
               <td>
+
                 <span class="sku">
                   {{ product.sku }}
                 </span>
+
               </td>
+
 
               <td>
                 {{
-                  product.category ||
-                  'Unassigned'
+                  product.category
+                  || 'Unassigned'
                 }}
               </td>
+
 
               <td>
                 {{
@@ -196,11 +307,14 @@
                 }}
               </td>
 
+
               <td>
+
                 <span
                   class="stock-badge"
                   [class.low-stock]="
-                    product.quantity > 0 &&
+                    product.quantity > 0
+                    &&
                     product.quantity <= 10
                   "
                   [class.out-of-stock]="
@@ -213,17 +327,25 @@
                       : product.quantity
                   }}
                 </span>
+
               </td>
+
 
               <td>
                 {{
-                  product.supplier ||
-                  'Unassigned'
+                  product.supplier
+                  || 'Unassigned'
                 }}
               </td>
 
-              <td class="actions-cell">
+
+              <td
+                *ngIf="canManageProducts()"
+                class="actions-cell"
+              >
+
                 <button
+                  *ngIf="canEditProduct()"
                   class="icon-button"
                   type="button"
                   title="Edit product"
@@ -232,19 +354,30 @@
                   <i class="bi bi-pencil"></i>
                 </button>
 
+
                 <button
-                  class="icon-button delete-button"
+                  *ngIf="canDeleteProduct()"
+                  class="
+                    icon-button
+                    delete-button
+                  "
                   type="button"
                   title="Delete product"
                   (click)="deleteProduct(product)"
                 >
                   <i class="bi bi-trash"></i>
                 </button>
+
               </td>
+
             </tr>
+
           </tbody>
+
         </table>
+
       </div>
+
 
       <footer
         *ngIf="
@@ -253,51 +386,96 @@
         "
         class="pagination"
       >
+
         <span>
-          Showing {{ startRecord }}–{{ endRecord }}
+          Showing
+          {{ startRecord }}–{{ endRecord }}
           of {{ totalElements }}
         </span>
 
+
         <div class="pagination-buttons">
+
           <button
             type="button"
-            [disabled]="currentPage === 0"
+            [disabled]="
+              currentPage === 0
+            "
             (click)="previousPage()"
           >
-            <i class="bi bi-chevron-left"></i>
+
+            <i
+              class="
+                bi
+                bi-chevron-left
+              "
+            ></i>
+
             Previous
+
           </button>
 
+
           <span>
-            Page {{ currentPage + 1 }}
-            of {{ totalPages }}
+            Page
+            {{ currentPage + 1 }}
+            of
+            {{ totalPages }}
           </span>
+
 
           <button
             type="button"
             [disabled]="isLastPage"
             (click)="nextPage()"
           >
+
             Next
-            <i class="bi bi-chevron-right"></i>
+
+            <i
+              class="
+                bi
+                bi-chevron-right
+              "
+            ></i>
+
           </button>
+
         </div>
+
       </footer>
+
     </section>
+
   </main>
+
 </div>
 
+
 <div
-  *ngIf="showForm"
+  *ngIf="
+    showForm &&
+    (
+      canCreateProduct()
+      ||
+      canEditProduct()
+    )
+  "
   class="modal-backdrop"
   (click)="closeForm()"
 >
+
   <section
     class="modal-card"
-    (click)="$event.stopPropagation()"
+    (click)="
+      $event.stopPropagation()
+    "
   >
+
     <header class="modal-header">
+
       <div>
+
         <p class="eyebrow">
           {{
             isEditing
@@ -313,7 +491,9 @@
               : 'Add Product'
           }}
         </h2>
+
       </div>
+
 
       <button
         type="button"
@@ -321,9 +501,13 @@
         [disabled]="isSaving"
         (click)="closeForm()"
       >
+
         <i class="bi bi-x-lg"></i>
+
       </button>
+
     </header>
+
 
     <div
       *ngIf="errorMessage"
@@ -332,13 +516,22 @@
       {{ errorMessage }}
     </div>
 
+
     <form
       [formGroup]="productForm"
       (ngSubmit)="saveProduct()"
     >
+
       <div class="form-grid">
 
-        <div class="form-group full-width">
+
+        <div
+          class="
+            form-group
+            full-width
+          "
+        >
+
           <label for="name">
             Product name
           </label>
@@ -352,15 +545,25 @@
 
           <small
             *ngIf="
-              productForm.controls.name.touched &&
-              productForm.controls.name.invalid
+              productForm
+                .controls
+                .name
+                .touched
+              &&
+              productForm
+                .controls
+                .name
+                .invalid
             "
           >
             Enter a valid product name.
           </small>
+
         </div>
 
+
         <div class="form-group">
+
           <label for="sku">
             SKU
           </label>
@@ -374,15 +577,25 @@
 
           <small
             *ngIf="
-              productForm.controls.sku.touched &&
-              productForm.controls.sku.invalid
+              productForm
+                .controls
+                .sku
+                .touched
+              &&
+              productForm
+                .controls
+                .sku
+                .invalid
             "
           >
             Enter a valid SKU.
           </small>
+
         </div>
 
+
         <div class="form-group">
+
           <label for="price">
             Price
           </label>
@@ -398,15 +611,25 @@
 
           <small
             *ngIf="
-              productForm.controls.price.touched &&
-              productForm.controls.price.invalid
+              productForm
+                .controls
+                .price
+                .touched
+              &&
+              productForm
+                .controls
+                .price
+                .invalid
             "
           >
             Enter a valid price.
           </small>
+
         </div>
 
+
         <div class="form-group">
+
           <label for="quantity">
             Quantity
           </label>
@@ -422,15 +645,25 @@
 
           <small
             *ngIf="
-              productForm.controls.quantity.touched &&
-              productForm.controls.quantity.invalid
+              productForm
+                .controls
+                .quantity
+                .touched
+              &&
+              productForm
+                .controls
+                .quantity
+                .invalid
             "
           >
             Quantity cannot be negative.
           </small>
+
         </div>
 
+
         <div class="form-group">
+
           <label for="category">
             Category
           </label>
@@ -439,29 +672,46 @@
             id="category"
             formControlName="categoryId"
           >
-            <option [ngValue]="0">
+
+            <option
+              [ngValue]="0"
+            >
               Select category
             </option>
 
             <option
-              *ngFor="let category of categories"
+              *ngFor="
+                let category
+                of categories
+              "
               [ngValue]="category.id"
             >
               {{ category.name }}
             </option>
+
           </select>
 
           <small
             *ngIf="
-              productForm.controls.categoryId.touched &&
-              productForm.controls.categoryId.invalid
+              productForm
+                .controls
+                .categoryId
+                .touched
+              &&
+              productForm
+                .controls
+                .categoryId
+                .invalid
             "
           >
             Select a category.
           </small>
+
         </div>
 
+
         <div class="form-group">
+
           <label for="supplier">
             Supplier
           </label>
@@ -470,32 +720,54 @@
             id="supplier"
             formControlName="supplierId"
           >
-            <option [ngValue]="0">
+
+            <option
+              [ngValue]="0"
+            >
               Select supplier
             </option>
 
             <option
-              *ngFor="let supplier of suppliers"
+              *ngFor="
+                let supplier
+                of suppliers
+              "
               [ngValue]="supplier.id"
             >
               {{ supplier.name }}
             </option>
+
           </select>
 
           <small
             *ngIf="
-              productForm.controls.supplierId.touched &&
-              productForm.controls.supplierId.invalid
+              productForm
+                .controls
+                .supplierId
+                .touched
+              &&
+              productForm
+                .controls
+                .supplierId
+                .invalid
             "
           >
             Select a supplier.
           </small>
+
         </div>
 
+
         <div
-          class="form-group full-width inventory-option"
+          class="
+            form-group
+            full-width
+            inventory-option
+          "
         >
+
           <label class="checkbox-label">
+
             <input
               type="checkbox"
               formControlName="addToInventory"
@@ -504,19 +776,30 @@
             <span>
               Add this product to inventory
             </span>
+
           </label>
+
 
           <p class="field-description">
             The product quantity will be used as the initial inventory stock.
           </p>
+
         </div>
+
 
         <div
           *ngIf="
-            productForm.controls.addToInventory.value
+            productForm
+              .controls
+              .addToInventory
+              .value
           "
-          class="form-group full-width"
+          class="
+            form-group
+            full-width
+          "
         >
+
           <label for="minimumStock">
             Minimum stock threshold
           </label>
@@ -532,22 +815,32 @@
 
           <small
             *ngIf="
-              productForm.controls.minimumStock.touched &&
-              productForm.controls.minimumStock.invalid
+              productForm
+                .controls
+                .minimumStock
+                .touched
+              &&
+              productForm
+                .controls
+                .minimumStock
+                .invalid
             "
           >
             Minimum stock cannot be negative.
           </small>
 
+
           <p class="field-description">
-            SmartStock will flag this product when its stock reaches or falls
-            below this value.
+            SmartStock will flag this product when its stock reaches or falls below this value.
           </p>
+
         </div>
 
       </div>
 
+
       <footer class="modal-actions">
+
         <button
           type="button"
           class="secondary-button"
@@ -557,17 +850,23 @@
           Cancel
         </button>
 
+
         <button
           type="submit"
           class="primary-button"
           [disabled]="
-            productForm.invalid ||
+            productForm.invalid
+            ||
             isSaving
           "
         >
+
           <span
             *ngIf="isSaving"
-            class="spinner-border spinner-border-sm"
+            class="
+              spinner-border
+              spinner-border-sm
+            "
           ></span>
 
           {{
@@ -577,8 +876,13 @@
                 ? 'Update Product'
                 : 'Create Product'
           }}
+
         </button>
+
       </footer>
+
     </form>
+
   </section>
+
 </div>

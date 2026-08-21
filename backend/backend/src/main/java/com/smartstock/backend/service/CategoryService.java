@@ -1,88 +1,216 @@
 package com.smartstock.backend.service;
 
-import com.smartstock.backend.dto.CategoryRequest;
-import com.smartstock.backend.dto.CategoryResponse;
-import com.smartstock.backend.model.Category;
-import com.smartstock.backend.repository.CategoryRepository;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.smartstock.backend.dto.CategoryRequest;
+import com.smartstock.backend.dto.CategoryResponse;
+
+import com.smartstock.backend.model.Category;
+import com.smartstock.backend.model.Company;
+import com.smartstock.backend.model.User;
+
+import com.smartstock.backend.repository.CategoryRepository;
+import com.smartstock.backend.repository.UserRepository;
 
 @Service
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
 
-    public CategoryService(CategoryRepository categoryRepository) {
+    public CategoryService(
+            CategoryRepository categoryRepository,
+            UserRepository userRepository
+    ) {
+        this.categoryRepository =
+                categoryRepository;
 
-        this.categoryRepository = categoryRepository;
-
+        this.userRepository =
+                userRepository;
     }
 
-    public CategoryResponse createCategory(CategoryRequest request) {
+    private Company getCurrentCompany(
+            String currentUserEmail
+    ) {
 
-        Category category = new Category();
+        User user = userRepository
+                .findByEmail(currentUserEmail)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Current user not found"
+                        )
+                );
 
-        category.setName(request.getName());
+        if (user.getCompany() == null) {
+            throw new IllegalStateException(
+                    "Current user is not assigned to a company"
+            );
+        }
 
-        Category saved = categoryRepository.save(category);
-
-        return mapToResponse(saved);
-
+        return user.getCompany();
     }
 
-    public List<CategoryResponse> getAllCategories() {
+    @Transactional
+    public CategoryResponse createCategory(
+            CategoryRequest request,
+            String currentUserEmail
+    ) {
 
-        return categoryRepository.findAll()
+        Company company =
+                getCurrentCompany(
+                        currentUserEmail
+                );
+
+        Category category =
+                new Category();
+
+        category.setName(
+                request.getName()
+        );
+
+        category.setCompany(
+                company
+        );
+
+        Category saved =
+                categoryRepository.save(
+                        category
+                );
+
+        return mapToResponse(
+                saved
+        );
+    }
+
+    public List<CategoryResponse> getAllCategories(
+            String currentUserEmail
+    ) {
+
+        Company company =
+                getCurrentCompany(
+                        currentUserEmail
+                );
+
+        return categoryRepository
+                .findAllByCompanyId(
+                        company.getId()
+                )
                 .stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
-
+                .toList();
     }
 
-    private CategoryResponse mapToResponse(Category category) {
+    public CategoryResponse getCategoryById(
+            Long id,
+            String currentUserEmail
+    ) {
 
-        CategoryResponse response = new CategoryResponse();
+        Company company =
+                getCurrentCompany(
+                        currentUserEmail
+                );
 
-        response.setId(category.getId());
+        Category category =
+                categoryRepository
+                        .findByIdAndCompanyId(
+                                id,
+                                company.getId()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Category not found"
+                                )
+                        );
 
-        response.setName(category.getName());
-
-        return response;
-
+        return mapToResponse(
+                category
+        );
     }
 
-    public CategoryResponse getCategoryById(Long id) {
-
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
-
-        return mapToResponse(category);
-    }
-
+    @Transactional
     public CategoryResponse updateCategory(
             Long id,
-            CategoryRequest request) {
+            CategoryRequest request,
+            String currentUserEmail
+    ) {
 
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+        Company company =
+                getCurrentCompany(
+                        currentUserEmail
+                );
 
-        category.setName(request.getName());
+        Category category =
+                categoryRepository
+                        .findByIdAndCompanyId(
+                                id,
+                                company.getId()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Category not found"
+                                )
+                        );
 
-        Category updated = categoryRepository.save(category);
+        category.setName(
+                request.getName()
+        );
 
-        return mapToResponse(updated);
+        Category updated =
+                categoryRepository.save(
+                        category
+                );
+
+        return mapToResponse(
+                updated
+        );
     }
 
-    public void deleteCategory(Long id) {
+    @Transactional
+    public void deleteCategory(
+            Long id,
+            String currentUserEmail
+    ) {
 
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+        Company company =
+                getCurrentCompany(
+                        currentUserEmail
+                );
 
-        categoryRepository.delete(category);
+        Category category =
+                categoryRepository
+                        .findByIdAndCompanyId(
+                                id,
+                                company.getId()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Category not found"
+                                )
+                        );
 
+        categoryRepository.delete(
+                category
+        );
     }
 
+    private CategoryResponse mapToResponse(
+            Category category
+    ) {
+
+        CategoryResponse response =
+                new CategoryResponse();
+
+        response.setId(
+                category.getId()
+        );
+
+        response.setName(
+                category.getName()
+        );
+
+        return response;
+    }
 }

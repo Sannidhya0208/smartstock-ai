@@ -26,12 +26,27 @@ export class Sidebar {
     private readonly router: Router
   ) {
   }
+  getCompanyName(): string {
+    return this.authService.getCompanyName() ?? 'SmartStock';
+  }
 
+  getRole(): string {
+    return this.authService.getRole() ?? '';
+  }
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
   isOwner(): boolean {
     return this.authService.isOwner();
+  }
+  canViewAnalytics(): boolean {
+    return this.authService.isOwner()
+      || this.authService.isManager();
+  }
+
+  canViewAi(): boolean {
+    return this.authService.isOwner()
+      || this.authService.isManager();
   }
 }

@@ -15,6 +15,7 @@ import { AppLayout } from './layout/app-layout/app-layout';
 
 import { authGuard } from './core/guards/auth-guard';
 import { ownerGuard } from './core/guards/owner.guard';
+import { managerGuard } from './core/guards/manager.guard';
 
 export const routes: Routes = [
 
@@ -68,7 +69,8 @@ export const routes: Routes = [
 
             {
                 path: 'analytics',
-                component: Analytics
+                component: Analytics,
+                canActivate: [managerGuard]
             },
 
             {
@@ -79,7 +81,8 @@ export const routes: Routes = [
 
             {
                 path: 'ai-assistant',
-                component: AiAssistant
+                component: AiAssistant,
+                canActivate: [managerGuard]
             }
 
         ]
